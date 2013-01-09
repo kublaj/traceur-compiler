@@ -28,6 +28,7 @@ import {GeneratorComprehensionTransformer} from
     'GeneratorComprehensionTransformer.js';
 import {GeneratorTransformPass} from './GeneratorTransformPass.js';
 import {ModuleTransformer} from './ModuleTransformer.js';
+import {NewTransformer} from './NewTransformer.js';
 import {NumericLiteralTransformer} from './NumericLiteralTransformer.js';
 import {ObjectLiteralTransformer} from './ObjectLiteralTransformer.js';
 import {ObjectMap} from '../util/ObjectMap.js';
@@ -206,6 +207,10 @@ export class ProgramTransformer {
     transform(transformOptions.spread,
               SpreadTransformer,
               identifierGenerator,
+              runtimeInliner);
+
+    transform(transformOptions.createHook,
+              NewTransformer,
               runtimeInliner);
 
     chain(true, () => runtimeInliner.transformAny(tree));

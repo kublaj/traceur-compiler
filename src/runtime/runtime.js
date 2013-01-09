@@ -158,15 +158,19 @@
 
   var internalStringValueName = newUniqueString();
 
+  function Symbol() {}
+
   /**
    * Creates a new private name object.
    * @param {string=} string Optional string used for toString.
    * @constructor
    */
-  function Name(string) {
+  function createSymbol(string) {
+    var name = Object.create(Symbol.prototype);
+
     if (!string)
       string = newUniqueString();
-    $defineProperty(this, internalStringValueName, {value: newUniqueString()});
+    $defineProperty(name, internalStringValueName, {value: newUniqueString()});
 
     function toString() {
       return string;
@@ -174,40 +178,41 @@
     $freeze(toString);
     $freeze(toString.prototype);
     var toStringDescr = method(toString);
-    $defineProperty(this, 'toString', toStringDescr);
+    $defineProperty(name, 'toString', toStringDescr);
 
-    this.public = $freeze($create(null, {
+    name.public = $freeze($create(null, {
       toString: method($freeze(function toString() {
         return string;
       }))
     }));
-    $freeze(this.public.toString.prototype);
+    $freeze(name.public.toString.prototype);
 
-    $freeze(this);
+    $freeze(name);
+    return name;
   };
-  $freeze(Name);
-  $freeze(Name.prototype);
+  $freeze(Symbol);
+  $freeze(Symbol.prototype);
 
   function assertName(val) {
     if (!NameModule.isName(val))
-      throw new TypeError(val + ' is not a Name');
+      throw new TypeError(val + ' is not a Symbol');
     return val;
   }
 
   // Private name.
 
   // Collection getters and setters
-  var elementDeleteName = new Name();
-  var elementGetName = new Name();
-  var elementSetName = new Name();
+  var elementDeleteName = createSymbol();
+  var elementGetName = createSymbol();
+  var elementSetName = createSymbol();
 
   // HACK: We should use runtime/modules/std/name.js or something like that.
   var NameModule = $freeze({
     Name: function(str) {
-      return new Name(str);
+      return createSymbol(str);
     },
     isName: function(x) {
-      return x instanceof Name;
+      return x instanceof Symbol;
     },
     elementGet: elementGetName,
     elementSet: elementSetName,
@@ -262,7 +267,7 @@
     return value;
   }
 
-  function assertNotName(s) {
+  function assertNotSymbol(s) {
     if (nameRe.test(s))
       throw Error('Invalid access to private name');
   }
@@ -304,7 +309,7 @@
       else
         $defineProperty(object, name[internalStringValueName], nonEnum(value));
     } else {
-      assertNotName(name);
+      assertNotSymbol(name);
       object[name] = value;
     }
   }
@@ -319,7 +324,7 @@
       }
       $defineProperty(object, name[internalStringValueName], descriptor);
     } else {
-      assertNotName(name);
+      assertNotSymbol(name);
       $defineProperty(object, name, descriptor);
     }
   }
@@ -337,7 +342,7 @@
   function getPropertyDescriptor(obj, name) {
     if (NameModule.isName(name))
       return undefined;
-    assertNotName(name);
+    assertNotSymbol(name);
     return $getPropertyDescriptor(obj, name);
   }
 
@@ -392,7 +397,7 @@
   }
 
   // Iterators.
-  var iteratorName = new Name('iterator');
+  var iteratorName = createSymbol('iterator');
 
   var IterModule = {
     get iterator() {
@@ -430,6 +435,18 @@
         }
       };
     }));
+  }
+
+  var creatorName = createSymbol('create');
+
+  var ReflectModule = {
+    get create() {
+      return creatorName;
+    }
+  };
+
+  function getCreator(func) {
+    return getProperty(func, creatorName);
   }
 
   /**
@@ -525,6 +542,9 @@
     },
     get '@iter'() {
       return IterModule;
+    },
+    get '@reflect'() {
+      return ReflectModule;
     }
   };
 
@@ -554,7 +574,7 @@
     Deferred: Deferred,
     addIterator: addIterator,
     assertName: assertName,
-    createName: NameModule.Name,
+    createName: createSymbol,
     deleteProperty: deleteProperty,
     elementDelete: elementDelete,
     elementGet: elementGet,
@@ -565,6 +585,7 @@
     setProperty: setProperty,
     setupGlobals: setupGlobals,
     has: has,
+    getCreator: getCreator,
   };
 
   // This file is sometimes used without traceur.js.
