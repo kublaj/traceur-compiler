@@ -246,7 +246,6 @@ function addBoolOption(name) {
 addFeatureOption('arrayComprehension', ON_BY_DEFAULT); // 11.4.1.2
 addFeatureOption('arrowFunctions', ON_BY_DEFAULT);     // 13.2
 addFeatureOption('classes', ON_BY_DEFAULT);            // 13.5
-addFeatureOption('createHook', ON_BY_DEFAULT);         // 8.3.19.2
 addFeatureOption('computedPropertyNames', ON_BY_DEFAULT);  // 11.1.5
 addFeatureOption('defaultParameters', ON_BY_DEFAULT);  // Cant find in the spec
 addFeatureOption('destructuring', ON_BY_DEFAULT);      // 11.13.1
@@ -263,6 +262,7 @@ addFeatureOption('templateLiterals', ON_BY_DEFAULT);   // 7.6.8
 
 // EXPERIMENTAL
 addFeatureOption('blockBinding', EXPERIMENTAL);       // 12.1
+addFeatureOption('createHook', EXPERIMENTAL);         // 8.3.19.2
 addFeatureOption('privateNameSyntax', EXPERIMENTAL);
 addFeatureOption('privateNames', EXPERIMENTAL);
 addFeatureOption('cascadeExpression', EXPERIMENTAL);

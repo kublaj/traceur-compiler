@@ -22,11 +22,13 @@ import {parseExpression} from './PlaceholderParser.js';
 var NEW_CODE = `
     function(func, argumentsList) {
       var creator = $traceurRuntime.getCreator(func);
+      var obj;
       if (creator === void 0)
-        return new (func.bind.apply(func, [null].concat(argumentsList)));
-      var obj = creator.call(func)
+        obj = Object.create(func.prototype);
+      else
+        obj = creator.call(func)
       var result = func.apply(obj, argumentsList);
-      return Object(result) === result ? result : obj;
+      return result && Object(result) === result ? result : obj;
     }`;
 
 /**

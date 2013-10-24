@@ -204,13 +204,13 @@ export class ProgramTransformer {
               PrivateNameSyntaxTransformer,
               identifierGenerator);
 
+    transform(transformOptions.createHook,
+              NewTransformer,
+              runtimeInliner);
+
     transform(transformOptions.spread,
               SpreadTransformer,
               identifierGenerator,
-              runtimeInliner);
-
-    transform(transformOptions.createHook,
-              NewTransformer,
               runtimeInliner);
 
     chain(true, () => runtimeInliner.transformAny(tree));
