@@ -12,27 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {ArrayMap} from '../util/ArrayMap.js';
+import {ArrayMap} from '../util/ArrayMap';
 import {
+  ARGUMENT_LIST,
   BLOCK,
   EXPRESSION_STATEMENT,
   IDENTIFIER_EXPRESSION
-} from '../syntax/trees/ParseTreeType.js';
-import {IdentifierToken} from '../syntax/IdentifierToken.js';
-import {LiteralToken} from '../syntax/LiteralToken.js';
-import {MutedErrorReporter} from '../util/MutedErrorReporter.js';
-import {ParseTree} from '../syntax/trees/ParseTree.js';
-import {ParseTreeTransformer} from './ParseTreeTransformer.js';
-import {Parser} from '../syntax/Parser.js';
+} from '../syntax/trees/ParseTreeType';
+import {IdentifierToken} from '../syntax/IdentifierToken';
+import {LiteralToken} from '../syntax/LiteralToken';
+import {MutedErrorReporter} from '../util/MutedErrorReporter';
+import {ParseTree} from '../syntax/trees/ParseTree';
+import {ParseTreeTransformer} from './ParseTreeTransformer';
+import {Parser} from '../syntax/Parser';
 import {
   LiteralExpression,
   LiteralPropertyName,
   PropertyMethodAssignment,
   PropertyNameAssignment,
   PropertyNameShorthand
-} from '../syntax/trees/ParseTrees.js';
-import {SourceFile} from '../syntax/SourceFile.js';
-import {IDENTIFIER} from '../syntax/TokenType.js';
+} from '../syntax/trees/ParseTrees';
+import {SourceFile} from '../syntax/SourceFile';
+import {IDENTIFIER} from '../syntax/TokenType';
 import {
   createArrayLiteralExpression,
   createBindingIdentifier,
@@ -51,7 +52,7 @@ import {
   createSetAccessor,
   createStringLiteral,
   createVoid0
-} from './ParseTreeFactory.js';
+} from './ParseTreeFactory';
 
 /**
  * @fileoverview This file provides two template string functions,
@@ -126,6 +127,8 @@ function parse(sourceLiterals, values, doParse) {
   return new PlaceholderTransformer(values).transformAny(tree);
 }
 
+var counter = 0;
+
 /**
  * Parses a set of strings coming from a template string and injects
  * placeholders into it. The resulting tree can later be used with the
@@ -169,7 +172,8 @@ export class PlaceholderParser {
       source += PREFIX + (i - 1) + sourceLiterals[i];
     }
 
-    var file = new SourceFile('parse@TemplateParser', source);
+    var file = new SourceFile(
+        '@traceur/generated/TemplateParser/' + counter++, source);
     var errorReporter = new MutedErrorReporter();
     var parser = new Parser(errorReporter, file);
     var tree = doParse(parser);
@@ -282,7 +286,7 @@ export class PlaceholderTransformer extends ParseTreeTransformer {
         return transformedExpression;
       return createExpressionStatement(transformedExpression);
     }
-    return super.transformExpressionStatement(tree);
+    return super(tree);
   }
 
   transformBlock(tree) {
@@ -295,7 +299,7 @@ export class PlaceholderTransformer extends ParseTreeTransformer {
       if (transformedStatement.type === BLOCK)
         return transformedStatement;
     }
-    return super.transformBlock(tree);
+    return super(tree);
   }
 
   transformFunctionBody(tree) {
@@ -308,13 +312,13 @@ export class PlaceholderTransformer extends ParseTreeTransformer {
       if (transformedStatement.type === BLOCK)
         return createFunctionBody(transformedStatement.statements);
     }
-    return super.transformFunctionBody(tree);
+    return super(tree);
   }
 
   transformMemberExpression(tree) {
     var value = this.getValue_(tree.memberName.value);
     if (value === NOT_FOUND)
-      return super.transformMemberExpression(tree);
+      return super(tree);
     var operand = this.transformAny(tree.operand);
     return createMemberExpression(operand, value);
   }
@@ -327,6 +331,18 @@ export class PlaceholderTransformer extends ParseTreeTransformer {
             convertValueToIdentifierToken(value));
       }
     }
-    return super.transformPropertyNameAssignment(tree);
+    return super(tree);
+  }
+
+  transformArgumentList(tree) {
+    if (tree.args.length === 1 &&
+        tree.args[0].type === IDENTIFIER_EXPRESSION) {
+      var arg0 = this.transformAny(tree.args[0]);
+      if (arg0 === tree.args[0])
+        return tree;
+      if (arg0.type === ARGUMENT_LIST)
+        return arg0;
+    }
+    return super(tree);
   }
 }

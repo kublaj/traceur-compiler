@@ -12,51 +12,50 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {BreakContinueTransformer} from './BreakContinueTransformer.js';
+import {BreakContinueTransformer} from './BreakContinueTransformer';
 import {
   CASE_CLAUSE,
   STATE_MACHINE,
   VARIABLE_DECLARATION_LIST,
   VARIABLE_STATEMENT
-} from '../../syntax/trees/ParseTreeType.js';
+} from '../../syntax/trees/ParseTreeType';
 import {
   CaseClause,
   IdentifierExpression,
   SwitchStatement
-} from '../../syntax/trees/ParseTrees.js';
-import {CatchState} from './CatchState.js';
-import {ConditionalState} from './ConditionalState.js';
-import {FallThroughState} from './FallThroughState.js';
-import {FinallyFallThroughState} from './FinallyFallThroughState.js';
-import {FinallyState} from './FinallyState.js';
-import {IdentifierToken} from '../../syntax/IdentifierToken.js';
-import {ParseTreeTransformer} from '../ParseTreeTransformer.js';
-import {assert} from '../../util/assert.js';
-import {parseStatement} from '../PlaceholderParser.js';
+} from '../../syntax/trees/ParseTrees';
+import {CatchState} from './CatchState';
+import {ConditionalState} from './ConditionalState';
+import {FallThroughState} from './FallThroughState';
+import {FinallyFallThroughState} from './FinallyFallThroughState';
+import {FinallyState} from './FinallyState';
+import {IdentifierToken} from '../../syntax/IdentifierToken';
+import {ParseTreeTransformer} from '../ParseTreeTransformer';
+import {assert} from '../../util/assert';
+import {parseStatement} from '../PlaceholderParser';
 import {
   $ARGUMENTS,
   $THAT,
   ARGUMENTS,
   CAUGHT_EXCEPTION,
   FINALLY_FALL_THROUGH,
-  INNER_FUNCTION,
   STATE,
   STORED_EXCEPTION,
   YIELD_ACTION,
   YIELD_SENT
-} from '../../syntax/PredefinedName.js';
-import {State} from './State.js';
-import {StateAllocator} from './StateAllocator.js';
-import {StateMachine} from '../../syntax/trees/StateMachine.js';
+} from '../../syntax/PredefinedName';
+import {State} from './State';
+import {StateAllocator} from './StateAllocator';
+import {StateMachine} from '../../syntax/trees/StateMachine';
 import {
   SwitchClause,
   SwitchState
-} from './SwitchState.js';
+} from './SwitchState';
 import {
   PLUS,
   VAR
-} from '../../syntax/TokenType.js';
-import {TryState} from './TryState.js';
+} from '../../syntax/TokenType';
+import {TryState} from './TryState';
 import {
   createAssignStateStatement,
   createAssignmentExpression,
@@ -86,8 +85,8 @@ import {
   createTryStatement,
   createVariableStatement,
   createWhileStatement
-} from '../ParseTreeFactory.js';
-import {variablesInBlock} from '../../semantics/VariableBinder.js';
+} from '../ParseTreeFactory';
+import {variablesInBlock} from '../../semantics/VariableBinder';
 
 /**
  * Performs a CPS transformation on a method body.
@@ -307,20 +306,20 @@ export class CPSTransformer extends ParseTreeTransformer {
             incrementState :
             this.allocateState();
     var startState =
-        result.initializer == null ?
+        result.initialiser == null ?
             (result.condition == null ?
                 loopBodyMachine.startState : conditionState) :
             this.allocateState();
     var fallThroughState = this.allocateState();
 
     var states = [];
-    if (result.initializer != null) {
+    if (result.initialiser != null) {
       states.push(
           new FallThroughState(
               startState,
               conditionState,
               createStatementList(
-                  createExpressionStatement(result.initializer))));
+                  createExpressionStatement(result.initialiser))));
     }
     if (result.condition != null) {
       states.push(
@@ -680,8 +679,8 @@ export class CPSTransformer extends ParseTreeTransformer {
   }
 
   /**
-   * This is the initializer of a for loop. Convert into an expression
-   * containing the initializers.
+   * This is the initialiser of a for loop. Convert into an expression
+   * containing the initialisers.
    *
    * @param {VariableDeclarationList} tree
    * @return {ParseTree}
@@ -691,12 +690,12 @@ export class CPSTransformer extends ParseTreeTransformer {
       var expressions = [];
       for (var i = 0; i < tree.declarations.length; i++) {
         var declaration = tree.declarations[i];
-        if (declaration.initializer != null) {
+        if (declaration.initialiser != null) {
           expressions.push(
               createAssignmentExpression(
                   createIdentifierExpression(
                       this.transformAny(declaration.lvalue)),
-                  this.transformAny(declaration.initializer)));
+                  this.transformAny(declaration.initialiser)));
         }
       }
       var list = expressions;

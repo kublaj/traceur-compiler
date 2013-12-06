@@ -12,23 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {FindVisitor} from './FindVisitor.js';
+import {FindVisitor} from './FindVisitor';
 import {
   FormalParameterList,
   FunctionExpression,
   IdentifierExpression,
   LiteralExpression
-} from '../syntax/trees/ParseTrees.js';
-import {TempVarTransformer} from './TempVarTransformer.js';
+} from '../syntax/trees/ParseTrees';
+import {TempVarTransformer} from './TempVarTransformer';
 import {
-  AT_NAME,
   IDENTIFIER,
   STRING
-} from '../syntax/TokenType.js';
+} from '../syntax/TokenType';
 import {
   COMPUTED_PROPERTY_NAME,
   LITERAL_PROPERTY_NAME
-} from '../syntax/trees/ParseTreeType.js';
+} from '../syntax/trees/ParseTreeType';
 import {
   createAssignmentExpression,
   createCommaExpression,
@@ -41,15 +40,15 @@ import {
   createParenExpression,
   createPropertyNameAssignment,
   createStringLiteral
-} from './ParseTreeFactory.js';
-import {propName} from '../staticsemantics/PropName.js';
-import {transformOptions} from '../options.js';
+} from './ParseTreeFactory';
+import {propName} from '../staticsemantics/PropName';
+import {transformOptions} from '../options';
 
 /**
- * AdvancedPropertyFinder class that finds if an object literal contains a
+ * FindAdvancedProperty class that finds if an object literal contains a
  * computed property name, an at name or a __proto__ property.
  */
-class AdvancedPropertyFinder extends FindVisitor {
+class FindAdvancedProperty extends FindVisitor {
   /**
    * @param {ObjectLiteralTree} tree
    */
@@ -65,13 +64,6 @@ class AdvancedPropertyFinder extends FindVisitor {
       super.visitPropertyNameAssignment(tree);
   }
 
-  visitLiteralPropertyName(tree) {
-    if (transformOptions.privateNameSyntax &&
-        tree.literalToken.type === AT_NAME) {
-      this.found = true;
-    }
-  }
-
   visitComputedPropertyName(tree) {
     if (transformOptions.computedPropertyNames)
       this.found = true;
@@ -83,8 +75,7 @@ function isProtoName(tree) {
 }
 
 /**
- * Transforms object literals, both for the propertyMethods and the
- * privateNameSyntax passes.
+ * Transforms object literals for the propertyMethods pass.
  *
  * If the object liteal contains an at name then we need to use a temporary
  * object and then use Object.defineProperty.
@@ -173,9 +164,6 @@ export class ObjectLiteralTransformer extends TempVarTransformer {
     // TODO(arv): Computed property names
     var token = nameTree.literalToken;
     switch (token.type) {
-      case AT_NAME:
-        return createIdentifierExpression(
-            this.identifierGenerator.getUniqueIdentifier(token.value));
       case IDENTIFIER:
         return createStringLiteral(token.value);
       default:
@@ -196,7 +184,7 @@ export class ObjectLiteralTransformer extends TempVarTransformer {
     var oldSeenAccessors = this.seenAccessors;
 
     try {
-      var finder = new AdvancedPropertyFinder(tree);
+      var finder = new FindAdvancedProperty(tree);
       if (!finder.found) {
         this.needsAdvancedTransform = false;
         return super.transformObjectLiteralExpression(tree);
@@ -289,7 +277,7 @@ export class ObjectLiteralTransformer extends TempVarTransformer {
 
   transformPropertyMethodAssignment(tree) {
     var func = new FunctionExpression(tree.location, null, tree.isGenerator,
-        this.transformAny(tree.formalParameterList),
+        this.transformAny(tree.formalParameterList), tree.typeAnnotation,
         this.transformAny(tree.functionBody));
     if (!this.needsAdvancedTransform) {
       // m() { }
@@ -320,13 +308,5 @@ export class ObjectLiteralTransformer extends TempVarTransformer {
           enumerable: false,
           writable: true
         });
-  }
-
-  /**
-   * @param {UniqueIdentifierGenerator} identifierGenerator
-   * @param {ParseTree} tree
-   */
-  static transformTree(identifierGenerator, tree) {
-    return new ObjectLiteralTransformer(identifierGenerator).transformAny(tree);
   }
 }

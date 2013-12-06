@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {ParseTreeTransformer} from './ParseTreeTransformer.js';
+import {ParseTreeTransformer} from './ParseTreeTransformer';
 
 import {
-  AtNameExpression,
   BindingIdentifier,
   BreakStatement,
   ContinueStatement,
@@ -33,7 +32,7 @@ import {
   RestParameter,
   SuperExpression,
   ThisExpression 
-} from '../syntax/trees/ParseTrees.js';
+} from '../syntax/trees/ParseTrees';
 
 /**
  * Duplicates a ParseTree. Simply creates new leaf nodes so the
@@ -41,14 +40,6 @@ import {
  * thus create new branch nodes. 
  */
 export class CloneTreeTransformer extends ParseTreeTransformer {
-
-  /**
-   * @param {AtNameExpression} tree
-   * @return {ParseTree}
-   */
-  transformAtNameExpression(tree) {
-    return new AtNameExpression(tree.location, tree.atNameToken);
-  }
 
   /**
    * @param {BindingIdentifier} tree
@@ -157,7 +148,7 @@ export class CloneTreeTransformer extends ParseTreeTransformer {
    * @return {ParseTree}
    */
   transformPredefinedType(tree) {
-    return new PredefinedType(tree.location, tree.token);
+    return new PredefinedType(tree.location, tree.typeToken);
   }
 
   /**
@@ -173,15 +164,7 @@ export class CloneTreeTransformer extends ParseTreeTransformer {
    * @return {ParseTree}
    */
   transformTemplateLiteralPortion(tree) {
-    return new TemplateLiteralPortion(tree.location, tree.token);
-  }
-
-  /**
-   * @param {RestParameter} tree
-   * @return {ParseTree}
-   */
-  transformRestParameter(tree) {
-    return new RestParameter(tree.location, tree.identifer);
+    return new TemplateLiteralPortion(tree.location, tree.value);
   }
 
   /**

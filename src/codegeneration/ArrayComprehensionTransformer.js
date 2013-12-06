@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {ComprehensionTransformer} from './ComprehensionTransformer.js';
-import {createIdentifierExpression} from './ParseTreeFactory.js';
-import {parseStatement} from './PlaceholderParser.js';
+import {ComprehensionTransformer} from './ComprehensionTransformer';
+import {createIdentifierExpression} from './ParseTreeFactory';
+import {parseStatement} from './PlaceholderParser';
 
 /**
  * Array Comprehension Transformer:
@@ -66,14 +66,3 @@ export class ArrayComprehensionTransformer extends ComprehensionTransformer {
     return result;
   }
 }
-
-/**
- * @param {UniqueIdentifierGenerator} identifierGenerator
- * @param {ParseTree} tree
- * @return {ParseTree}
- */
-ArrayComprehensionTransformer.transformTree =
-    function(identifierGenerator, tree) {
-  return new ArrayComprehensionTransformer(identifierGenerator).
-      transformAny(tree);
-};

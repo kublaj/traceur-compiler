@@ -16,19 +16,19 @@ import {
   BLOCK,
   VARIABLE_DECLARATION_LIST,
   IDENTIFIER_EXPRESSION
-} from '../../syntax/trees/ParseTreeType.js';
+} from '../../syntax/trees/ParseTreeType';
 import {
   LENGTH,
   PUSH
-} from '../../syntax/PredefinedName.js';
-import {TempVarTransformer} from '../TempVarTransformer.js';
+} from '../../syntax/PredefinedName';
+import {TempVarTransformer} from '../TempVarTransformer';
 import {
   BANG,
   IN,
   OPEN_ANGLE,
   PLUS_PLUS,
   VAR
-} from '../../syntax/TokenType.js';
+} from '../../syntax/TokenType';
 import {
   createArgumentList,
   createAssignmentStatement,
@@ -50,7 +50,7 @@ import {
   createUnaryExpression,
   createVariableDeclarationList,
   createVariableStatement
-} from '../ParseTreeFactory.js';
+} from '../ParseTreeFactory';
 
 /**
  * Desugars for-in loops to be compatible with generators.
@@ -118,16 +118,16 @@ export class ForInTransformPass extends TempVarTransformer {
         createIdentifierExpression(i));
 
     var originalKey, assignOriginalKey;
-    if (tree.initializer.type == VARIABLE_DECLARATION_LIST) {
-      var decList = tree.initializer;
+    if (tree.initialiser.type == VARIABLE_DECLARATION_LIST) {
+      var decList = tree.initialiser;
       originalKey = createIdentifierExpression(decList.declarations[0].lvalue);
       // var key = $keys[$i];
       assignOriginalKey = createVariableStatement(decList.declarationType,
           originalKey.identifierToken, lookup);
-    } else if (tree.initializer.type == IDENTIFIER_EXPRESSION) {
-      originalKey = tree.initializer;
+    } else if (tree.initialiser.type == IDENTIFIER_EXPRESSION) {
+      originalKey = tree.initialiser;
       // key = $keys[$i];
-      assignOriginalKey = createAssignmentStatement(tree.initializer, lookup);
+      assignOriginalKey = createAssignmentStatement(tree.initialiser, lookup);
     } else {
       throw new Error('Invalid left hand side of for in loop');
     }
@@ -172,13 +172,5 @@ export class ForInTransformPass extends TempVarTransformer {
             createBlock(innerBlock)));
 
     return createBlock(elements);
-  }
-
-  /*
-   * @param {UniqueIdentifierGenerator} identifierGenerator
-   * @param {ParseTree} tree
-   */
-  static transformTree(identifierGenerator, tree) {
-    return new ForInTransformPass(identifierGenerator).transformAny(tree);
   }
 }

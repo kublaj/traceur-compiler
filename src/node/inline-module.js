@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+'use strict';
+
 var fs = require('fs');
 var path = require('path');
 var NodeLoader = require('./NodeLoader.js');
@@ -19,93 +21,10 @@ var normalizePath = require('./file-util.js').normalizePath;
 
 var ErrorReporter = traceur.util.ErrorReporter;
 var InternalLoader = traceur.modules.internals.InternalLoader;
-var ModuleAnalyzer = traceur.semantics.ModuleAnalyzer;
-var ModuleDefinition = traceur.syntax.trees.ModuleDefinition;
-var ModuleRequireVisitor = traceur.codegeneration.module.ModuleRequireVisitor;
-var ModuleSymbol = traceur.semantics.symbols.ModuleSymbol;
-var ModuleTransformer = traceur.codegeneration.ModuleTransformer;
-var ParseTreeFactory = traceur.codegeneration.ParseTreeFactory;
-var ParseTreeTransformer = traceur.codegeneration.ParseTreeTransformer;
-var Parser = traceur.syntax.Parser;
 var Script = traceur.syntax.trees.Script;
-var ModuleSpecifier = traceur.syntax.trees.ModuleSpecifier;
-var ProgramTransformer = traceur.codegeneration.ProgramTransformer;
 var Project = traceur.semantics.symbols.Project;
 var SourceFile = traceur.syntax.SourceFile
 var SourceMapGenerator = traceur.outputgeneration.SourceMapGenerator;
-var TreeWriter = traceur.outputgeneration.TreeWriter;
-var IDENTIFIER = traceur.syntax.TokenType.IDENTIFIER;
-
-var createIdentifierExpression = ParseTreeFactory.createIdentifierExpression;
-var createIdentifierToken = ParseTreeFactory.createIdentifierToken;
-var createStringLiteralToken = ParseTreeFactory.createStringLiteralToken;
-var resolveUrl = traceur.util.resolveUrl;
-
-/**
- * Generates an identifier string that represents a URL.
- * @param {string} url
- * @param {string} commonPath
- * @return {string}
- */
-function generateNameForUrl(url, commonPath) {
-  return '$__' + url.replace(commonPath, '').replace(/[^\d\w$]/g, '_');
-}
-
-/**
- * Wraps a program in a module definition.
- * @param  {Script} tree The original program tree.
- * @param  {string} url The relative URL of the module that the program
- *     represents.
- * @param {string} commonPath The base path of all the files. This is passed
- *     along to |generateNameForUrl|.
- * @return {[Script} A new program tree with only one statement, which is
- *     a module definition.
- */
-function wrapScript(tree, url, commonPath) {
-  return new Script(null,
-      [new ModuleDefinition(null,
-          createStringLiteralToken(url), tree.scriptItemList)]);
-}
-
-/**
- * This transformer replaces
- *
- *   import * from "url"
- *
- * with
- *
- *   import * from $_name_associated_with_url
- *
- * @param {string} url The base URL that all the modules should be relative
- *     to.
- * @param {string} commonPath The path that is common for all URLs.
- */
-function ModuleRequireTransformer(url, commonPath, isStart) {
-  ParseTreeTransformer.call(this);
-  this.url = url;
-  this.commonPath = commonPath;
-  this.isStart = isStart
-}
-
-ModuleRequireTransformer.prototype = {
-  __proto__: ParseTreeTransformer.prototype,
-  transformModuleSpecifier: function(tree) {
-    if (!this.isStart)
-      return tree;
-
-    var url = tree.token.processedValue;
-
-     // Don't handle builtin modules.
-    if (url.charAt(0) === '@')
-      return tree;
-
-    url = resolveUrl(this.url, url);
-
-    return new ModuleSpecifier(tree.location, createStringLiteralToken(url));
-  }
-};
-
-var startCodeUnit;
 
 /**
  * @param {ErrorReporter} reporter
@@ -132,34 +51,18 @@ InlineCodeLoader.prototype = {
   },
 
   transformCodeUnit: function(codeUnit) {
-    var transformer = new ModuleRequireTransformer(
-          codeUnit.url,
-          this.dirname,
-          codeUnit === startCodeUnit);
-    var tree = transformer.transformAny(codeUnit.tree);
     if (this.depTarget) {
       console.log('%s: %s', this.depTarget,
-                  normalizePath(path.relative(path.join(__dirname, '../..'), codeUnit.url)));
+                  normalizePath(path.relative(path.join(__dirname, '../..'),
+                  codeUnit.url)));
     }
-    if (codeUnit === startCodeUnit)
-      return tree;
-    return wrapScript(tree, codeUnit.url, this.dirname);
+
+    return InternalLoader.prototype.transformCodeUnit.call(this, codeUnit);
   }
 };
 
 function allLoaded(url, reporter, elements) {
-  var project = new Project(url);
-  var programTree = new Script(null, elements);
-
-  var file = new SourceFile(project.url, '/* dummy */');
-  project.addFile(file);
-  project.setParseTree(file, programTree);
-
-  var analyzer = new ModuleAnalyzer(reporter, project);
-  analyzer.analyze();
-
-  var transformer = new ProgramTransformer(reporter, project);
-  return transformer.transform(programTree);
+  return new Script(null, elements);
 }
 
 /**
@@ -189,7 +92,6 @@ function inlineAndCompile(filenames, options, reporter, callback, errback) {
 
   function loadNext() {
     var codeUnit = loader.load(filenames[loadCount]);
-    startCodeUnit = codeUnit;
 
     codeUnit.addListener(function() {
       loadCount++;
@@ -221,8 +123,7 @@ function inlineAndCompileSync(filenames, options, reporter) {
   var loader = new InlineCodeLoader(reporter, project, elements, depTarget);
 
   filenames.forEach(function(filename) {
-    filename = resolveUrl(basePath, filename);
-    startCodeUnit = loader.getCodeUnit(filename);
+    filename = System.normalResolve(filename, basePath);
     loader.loadSync(filename);
   });
   return allLoaded(basePath, reporter, elements);

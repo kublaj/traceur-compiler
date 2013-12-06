@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {ParseTreeVisitor} from '../syntax/ParseTreeVisitor.js';
+import {ParseTreeVisitor} from '../syntax/ParseTreeVisitor';
 
 // Object used as a sentinel. This is thrown to abort visiting the rest of the
 // tree.
@@ -27,10 +27,10 @@ var foundSentinel = {};
 export class FindVisitor extends ParseTreeVisitor {
   /**
    * @param {ParseTree} tree
-   * @param {boolean} keepOnGoing Whether to stop searching after the first
+   * @param {boolean=} keepOnGoing Whether to stop searching after the first
    *     found condition.
    */
-  constructor(tree, keepOnGoing) {
+  constructor(tree, keepOnGoing = undefined) {
     this.found_ = false;
     this.keepOnGoing_ = keepOnGoing;
     try {

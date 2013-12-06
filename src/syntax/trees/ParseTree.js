@@ -12,14 +12,108 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-module ParseTreeType from './ParseTreeType.js';
-import * from './ParseTreeType.js';
+module ParseTreeType from './ParseTreeType';
 import {
   STRING,
   VAR
-} from '../TokenType.js';
-import {Token} from '../Token.js';
-module utilJSON from '../../util/JSON.js';
+} from '../TokenType';
+import {Token} from '../Token';
+module utilJSON from '../../util/JSON';
+
+import {
+  ARGUMENT_LIST,
+  ARRAY_COMPREHENSION,
+  ARRAY_LITERAL_EXPRESSION,
+  ARRAY_PATTERN,
+  ARROW_FUNCTION_EXPRESSION,
+  AWAIT_STATEMENT,
+  BINARY_OPERATOR,
+  BINDING_ELEMENT,
+  BINDING_IDENTIFIER,
+  BLOCK,
+  BREAK_STATEMENT,
+  CALL_EXPRESSION,
+  CASE_CLAUSE,
+  CATCH,
+  CLASS_DECLARATION,
+  CLASS_EXPRESSION,
+  COMMA_EXPRESSION,
+  COMPREHENSION_FOR,
+  COMPREHENSION_IF,
+  COMPUTED_PROPERTY_NAME,
+  CONDITIONAL_EXPRESSION,
+  CONTINUE_STATEMENT,
+  COVER_FORMALS,
+  COVER_INITIALISED_NAME,
+  DEBUGGER_STATEMENT,
+  DEFAULT_CLAUSE,
+  DO_WHILE_STATEMENT,
+  EMPTY_STATEMENT,
+  EXPORT_DECLARATION,
+  EXPORT_SPECIFIER,
+  EXPORT_SPECIFIER_SET,
+  EXPORT_STAR,
+  EXPRESSION_STATEMENT,
+  FINALLY,
+  FOR_IN_STATEMENT,
+  FOR_OF_STATEMENT,
+  FOR_STATEMENT,
+  FORMAL_PARAMETER,
+  FORMAL_PARAMETER_LIST,
+  FUNCTION_BODY,
+  FUNCTION_DECLARATION,
+  FUNCTION_EXPRESSION,
+  GENERATOR_COMPREHENSION,
+  GET_ACCESSOR,
+  IDENTIFIER_EXPRESSION,
+  IF_STATEMENT,
+  IMPORT_DECLARATION,
+  IMPORT_SPECIFIER,
+  IMPORT_SPECIFIER_SET,
+  LABELLED_STATEMENT,
+  LITERAL_EXPRESSION,
+  LITERAL_PROPERTY_NAME,
+  MEMBER_EXPRESSION,
+  MEMBER_LOOKUP_EXPRESSION,
+  MODULE,
+  MODULE_DECLARATION,
+  MODULE_SPECIFIER,
+  NAMED_EXPORT,
+  NEW_EXPRESSION,
+  OBJECT_LITERAL_EXPRESSION,
+  OBJECT_PATTERN,
+  OBJECT_PATTERN_FIELD,
+  PAREN_EXPRESSION,
+  POSTFIX_EXPRESSION,
+  PREDEFINED_TYPE,
+  PROPERTY_METHOD_ASSIGNMENT,
+  PROPERTY_NAME_ASSIGNMENT,
+  PROPERTY_NAME_SHORTHAND,
+  REST_PARAMETER,
+  RETURN_STATEMENT,
+  SCRIPT,
+  SET_ACCESSOR,
+  SPREAD_EXPRESSION,
+  SPREAD_PATTERN_ELEMENT,
+  STATE_MACHINE,
+  SUPER_EXPRESSION,
+  SWITCH_STATEMENT,
+  SYNTAX_ERROR_TREE,
+  TEMPLATE_LITERAL_EXPRESSION,
+  TEMPLATE_LITERAL_PORTION,
+  TEMPLATE_SUBSTITUTION,
+  THIS_EXPRESSION,
+  THROW_STATEMENT,
+  TRY_STATEMENT,
+  TYPE_NAME,
+  UNARY_EXPRESSION,
+  VARIABLE_DECLARATION,
+  VARIABLE_DECLARATION_LIST,
+  VARIABLE_STATEMENT,
+  WHILE_STATEMENT,
+  WITH_STATEMENT,
+  YIELD_EXPRESSION
+} from './ParseTreeType';
 
 export {ParseTreeType};
 
@@ -94,10 +188,8 @@ export class ParseTree {
       case ARRAY_COMPREHENSION:
       case ARRAY_LITERAL_EXPRESSION:
       case ARROW_FUNCTION_EXPRESSION:
-      case AT_NAME_EXPRESSION:
       case BINARY_OPERATOR:
       case CALL_EXPRESSION:
-      case CASCADE_EXPRESSION:
       case CLASS_EXPRESSION:
       case CONDITIONAL_EXPRESSION:
       case FUNCTION_EXPRESSION:
@@ -149,7 +241,6 @@ export class ParseTree {
       // CallExpression:
       //   CallExpression . IdentifierName
       case CALL_EXPRESSION:
-      case CASCADE_EXPRESSION:
         return true;
 
       // new MemberExpression Arguments
@@ -174,7 +265,8 @@ export class ParseTree {
 
   /** @return {boolean} */
   isRestParameter() {
-    return this.type == REST_PARAMETER;
+    return this.type == REST_PARAMETER ||
+        (this.type == FORMAL_PARAMETER && this.parameter.isRestParameter());
   }
 
   /** @return {boolean} */
@@ -219,7 +311,6 @@ export class ParseTree {
       case FUNCTION_DECLARATION:
       // GeneratorDeclaration is covered by FUNCTION_DECLARATION.
       case CLASS_DECLARATION:
-      case NAME_STATEMENT:
        return true;
     }
 
@@ -265,8 +356,6 @@ export class ParseTree {
       case FUNCTION_DECLARATION:
       case IMPORT_DECLARATION:
       case MODULE_DECLARATION:
-      case MODULE_DEFINITION:
-      case NAME_STATEMENT:
       case VARIABLE_DECLARATION:
         return true;
     }

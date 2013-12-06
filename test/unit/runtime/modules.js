@@ -17,14 +17,16 @@ suite('modules.js', function() {
   var MutedErrorReporter =
       System.get('../src/util/MutedErrorReporter.js').MutedErrorReporter;
 
-  var reporter;
+  var reporter, baseURL;
 
   setup(function() {
     reporter = new traceur.util.ErrorReporter();
+    baseURL = System.baseURL;
   });
 
   teardown(function() {
     assert.isFalse(reporter.hadError());
+    System.baseURL = baseURL;
   });
 
   var url;
@@ -37,9 +39,7 @@ suite('modules.js', function() {
   function getLoader(opt_reporter) {
     var project = new traceur.semantics.symbols.Project(url);
     var parentLoader = null;
-    var resolver = null;
-    return new traceur.modules.CodeLoader(opt_reporter || reporter, project,
-                                          parentLoader, resolver);
+    return new traceur.modules.CodeLoader(opt_reporter || reporter, project);
   }
 
   test('LoaderEval', function() {
@@ -47,7 +47,7 @@ suite('modules.js', function() {
     assert.equal(42, result);
   });
 
-  test('LoaderEvalLoad', function(done) {
+  test('LoaderEvalAsync', function(done) {
     var code =
         'module a from "./test_a.js";\n' +
         'module b from "./test_b.js";\n' +
@@ -55,7 +55,7 @@ suite('modules.js', function() {
         '\n' +
         '[\'test\', a.name, b.name, c.name];\n';
 
-    var result = getLoader().evalLoad(code, function(value) {
+    var result = getLoader().evalAsync(code, function(value) {
       assert.equal('test', value[0]);
       assert.equal('A', value[1]);
       assert.equal('B', value[2]);
@@ -73,7 +73,7 @@ suite('modules.js', function() {
         '\n' +
         '[d.name, d.e.name];\n';
 
-    var result = getLoader().evalLoad(code, function(value) {
+    var result = getLoader().evalAsync(code, function(value) {
       assert.equal('D', value[0]);
       assert.equal('E', value[1]);
       done();
@@ -93,7 +93,7 @@ suite('modules.js', function() {
 
     var reporter = new MutedErrorReporter();
 
-    var result = getLoader(reporter).evalLoad(code, function(value) {
+    var result = getLoader(reporter).evalAsync(code, function(value) {
       fail('Should not have succeeded');
       done();
     }, function(error) {
@@ -106,7 +106,19 @@ suite('modules.js', function() {
   });
 
   test('LoaderLoad', function(done) {
-    getLoader().load('./test.js', function(mod) {
+    getLoader().load('./test_script.js', function(result) {
+      assert.equal('A', result[0]);
+      assert.equal('B', result[1]);
+      assert.equal('C', result[2]);
+      done();
+    }, function(error) {
+      fail(error);
+      done();
+    });
+  });
+
+  test('LoaderImport', function(done) {
+    getLoader().import('./test_module.js', function(mod) {
       assert.equal('test', mod.name);
       assert.equal('A', mod.a);
       assert.equal('B', mod.b);
@@ -116,6 +128,41 @@ suite('modules.js', function() {
       fail(error);
       done();
     });
+  });
+
+  test('System.normalize', function() {
+    var m = System.get('@traceur/module');
+
+    System.baseURL = 'http://example.org/a/b.html';
+    assert.equal('http://example.org/a/d/e/f', System.normalize('d/e/f'));
+    assert.equal('http://example.org/e/f', System.normalize('../e/f'));
+
+    System.baseURL = '/dir/file.js';
+    assert.equal('/dir/d/e/f', System.normalize('d/e/f'));
+    assert.equal('/e/f', System.normalize('../e/f'));
+
+    var base = 'http://ecmascipt.org/x/y';
+    assert.equal('http://ecmascipt.org/x/d/e/f',
+                 System.normalize('d/e/f', {referer: {name: base}}));
+  });
+
+  test('System.resolve', function() {
+    System.baseURL = 'http://example.org/a/b.html';
+    assert.equal(System.resolve('@abc/def'), '@abc/def');
+    assert.equal(System.resolve('abc/def'), 'http://example.org/a/abc/def.js');
+
+    // Backwards compat
+    assert.equal(System.resolve('abc/def.js'),
+                 'http://example.org/a/abc/def.js');
+
+    var importer = './src/syntax/Parser.js';
+    var options = {referer: {name: importer}};
+    var normalized = System.normalize('./IdentifierToken', options);
+    assert.equal(normalized, 'src/syntax/IdentifierToken');
+    var resolved = System.resolve(normalized);
+    assert.equal(resolved,
+                 'http://example.org/a/src/syntax/IdentifierToken.js');
+
   });
 
 });

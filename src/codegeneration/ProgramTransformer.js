@@ -1,4 +1,4 @@
-// Copyright 2012 Traceur Authors.
+// Copyright 2013 Traceur Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the 'License');
 // you may not use this file except in compliance with the License.
@@ -12,278 +12,44 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {ArrayComprehensionTransformer} from
-    './ArrayComprehensionTransformer.js';
-import {ArrowFunctionTransformer} from './ArrowFunctionTransformer.js';
-import {AtNameMemberTransformer} from './AtNameMemberTransformer.js';
-import {BlockBindingTransformer} from './BlockBindingTransformer.js';
-import {CascadeExpressionTransformer} from './CascadeExpressionTransformer.js';
-import {ClassTransformer} from './ClassTransformer.js';
-import {CollectionTransformer} from './CollectionTransformer.js';
-import {DefaultParametersTransformer} from './DefaultParametersTransformer.js';
-import {DestructuringTransformer} from './DestructuringTransformer.js';
-import {ForOfTransformer} from './ForOfTransformer.js';
-import {FreeVariableChecker} from '../semantics/FreeVariableChecker.js';
-import {GeneratorComprehensionTransformer} from
-    'GeneratorComprehensionTransformer.js';
-import {GeneratorTransformPass} from './GeneratorTransformPass.js';
-import {ModuleTransformer} from './ModuleTransformer.js';
-import {NewTransformer} from './NewTransformer.js';
-import {NumericLiteralTransformer} from './NumericLiteralTransformer.js';
-import {ObjectLiteralTransformer} from './ObjectLiteralTransformer.js';
-import {ObjectMap} from '../util/ObjectMap.js';
-import {ParseTreeValidator} from '../syntax/ParseTreeValidator.js';
-import {PrivateNameSyntaxTransformer} from './PrivateNameSyntaxTransformer.js';
-import {PropertyNameShorthandTransformer} from
-    'PropertyNameShorthandTransformer.js';
-import {TemplateLiteralTransformer} from './TemplateLiteralTransformer.js';
-import {RestParameterTransformer} from './RestParameterTransformer.js';
-import {SpreadTransformer} from './SpreadTransformer.js';
-import {TypeTransformer} from './TypeTransformer.js';
-import {options, transformOptions} from '../options.js';
+import {FromOptionsTransformer} from './FromOptionsTransformer';
+import {ProjectTransformer} from './ProjectTransformer';
 
 /**
- * Transforms a Traceur file's ParseTree to a JS ParseTree.
+ * Use FromOptionsTransformer to transforms Traceur Project or
+ * SourceFile ParseTree to a JS ParseTree.
+ * Use the get/set treeTransformer to append additional transforms.
  */
-export class ProgramTransformer {
+export class ProgramTransformer extends ProjectTransformer {
   /**
    * @param {ErrorReporter} reporter
    * @param {Project} project
    */
   constructor(reporter, project) {
-    this.project_ = project;
-    this.reporter_ = reporter;
-    this.results_ = new ObjectMap();
+    var transformer = new FromOptionsTransformer(reporter,
+                                                 project.identifierGenerator);
+    super(reporter, project, transformer);
   }
 
   /**
-   * @return {void}
-   * @private
+   * @param {ErrorReporter} reporter
+   * @param {Project} project
+   * @return {ObjectMap}
    */
-  transform_() {
-    this.project_.getSourceFiles().forEach((file) => {
-      this.transformFile_(file);
-    });
+  static transform(reporter, project) {
+    var transformer = new ProgramTransformer(reporter, project);
+    return transformer.transform();
   }
 
   /**
-   * @param {SourceFile} file
-   * @return {void}
-   * @private
-   */
-  transformFile_(file) {
-    var result = this.transform(this.project_.getParseTree(file));
-    this.results_.set(file, result);
-  }
-
-  /**
-   * @param {ModuleSymbol} module
-   * @param {SourceFile} file
-   * @return {void}
-   * @private
-   */
-  transformFileAsModule_(module, file) {
-    var result = this.transformTree_(this.project_.getParseTree(file),
-                                     module);
-    this.results_.set(file, result);
-  }
-
-  /**
-   * This is the root of the code generation pass.
-   * Each pass translates one contruct from Traceur to standard JS constructs.
-   * The order of the passes matters.
-   *
-   * @param {Script} tree
+   * @param {ErrorReporter} reporter
+   * @param {Project} project
+   * @param {SourceFile} sourceFile
+   * @param {string} url
    * @return {ParseTree}
    */
-  transform(tree) {
-    return this.transformTree_(tree);
-  }
-
-  transformTree_(tree, module = undefined) {
-    var identifierGenerator = this.project_.identifierGenerator;
-    var runtimeInliner = this.project_.runtimeInliner;
-    var reporter = this.reporter_;
-
-    function transform(enabled, transformer, ...args) {
-      return chain(enabled, () => transformer.transformTree(...args, tree));
-    }
-
-    function chain(enabled, func) {
-      if (!enabled)
-        return;
-
-      if (!reporter.hadError()) {
-        if (options.validate) {
-          ParseTreeValidator.validate(tree);
-        }
-
-        tree = func() || tree;
-      }
-    }
-
-
-    // TODO: many of these simple, local transforms could happen in the same
-    // tree pass
-
-    transform(transformOptions.types, TypeTransformer);
-    transform(transformOptions.numericLiterals, NumericLiteralTransformer);
-
-    transform(transformOptions.templateLiterals,
-              TemplateLiteralTransformer,
-              identifierGenerator);
-
-    chain(transformOptions.modules,
-          () => this.transformModules_(tree, module));
-
-    transform(transformOptions.arrowFunctions,
-              ArrowFunctionTransformer, reporter);
-
-    // ClassTransformer needs to come before ObjectLiteralTransformer.
-    transform(transformOptions.classes,
-              ClassTransformer,
-              identifierGenerator,
-              runtimeInliner,
-              reporter);
-
-    transform(transformOptions.propertyNameShorthand,
-              PropertyNameShorthandTransformer);
-    transform(transformOptions.propertyMethods ||
-              transformOptions.computedPropertyNames ||
-              transformOptions.privateNameSyntax &&
-              transformOptions.privateNames,
-              ObjectLiteralTransformer,
-              identifierGenerator);
-
-    // Generator/ArrayComprehensionTransformer must come before for-of and
-    // destructuring.
-    transform(transformOptions.generatorComprehension,
-              GeneratorComprehensionTransformer,
-              identifierGenerator);
-    transform(transformOptions.arrayComprehension,
-              ArrayComprehensionTransformer,
-              identifierGenerator);
-
-    // for of must come before destructuring and generator, or anything
-    // that wants to use VariableBinder
-    transform(transformOptions.forOf,
-              ForOfTransformer,
-              identifierGenerator);
-
-    // rest parameters must come before generator
-    transform(transformOptions.restParameters,
-              RestParameterTransformer,
-              identifierGenerator);
-
-    // default parameters should come after rest parameter to get the
-    // expected order in the transformed code.
-    transform(transformOptions.defaultParameters,
-              DefaultParametersTransformer,
-              identifierGenerator);
-
-    // destructuring must come after for of and before block binding and
-    // generator
-    transform(transformOptions.destructuring,
-              DestructuringTransformer,
-              identifierGenerator);
-
-    // generator must come after for of and rest parameters
-    transform(transformOptions.generators || transformOptions.deferredFunctions,
-              GeneratorTransformPass,
-              identifierGenerator,
-              runtimeInliner,
-              reporter);
-
-    transform(transformOptions.privateNames &&
-              transformOptions.privateNameSyntax,
-              AtNameMemberTransformer,
-              identifierGenerator);
-
-    transform(transformOptions.privateNames &&
-              transformOptions.privateNameSyntax,
-              PrivateNameSyntaxTransformer,
-              identifierGenerator);
-
-    transform(transformOptions.createHook,
-              NewTransformer,
-              runtimeInliner);
-
-    transform(transformOptions.spread,
-              SpreadTransformer,
-              identifierGenerator,
-              runtimeInliner);
-
-    chain(true, () => runtimeInliner.transformAny(tree));
-
-    transform(transformOptions.blockBinding,
-              BlockBindingTransformer);
-
-    // Cascade must come before CollectionTransformer.
-    transform(transformOptions.cascadeExpression,
-              CascadeExpressionTransformer,
-              identifierGenerator,
-              reporter);
-
-    transform(transformOptions.trapMemberLookup ||
-              transformOptions.privateNames,
-              CollectionTransformer,
-              identifierGenerator);
-
-    // Issue errors for any unbound variables
-    chain(options.freeVariableChecker,
-          () => FreeVariableChecker.checkScript(reporter, tree));
-
-    return tree;
-  }
-
-  /**
-   * Transforms a program tree. If an optional module is passed in the
-   * program is treated as a module body.
-   * @param {Script} tree
-   * @param {ModuleSymbol=} module
-   * @return {Script}
-   * @private
-   */
-  transformModules_(tree, module = undefined) {
-    if (module)
-      return ModuleTransformer.transformAsModule(this.project_, module, tree);
-    return ModuleTransformer.transform(this.project_, tree);
+  static transformFile(reporter, project, sourceFile) {
+    var transformer = new ProgramTransformer(reporter, project);
+    return transformer.transformFile(sourceFile);
   }
 }
-
-/**
- * @param {ErrorReporter} reporter
- * @param {Project} project
- * @return {ObjectMap}
- */
-ProgramTransformer.transform = function(reporter, project) {
-  var transformer = new ProgramTransformer(reporter, project);
-  transformer.transform_();
-  return transformer.results_;
-};
-
-/**
- * @param {ErrorReporter} reporter
- * @param {Project} project
- * @param {SourceFile} sourceFile
- * @return {ObjectMap}
- */
-ProgramTransformer.transformFile = function(reporter, project, sourceFile) {
-  var transformer = new ProgramTransformer(reporter, project);
-  transformer.transformFile_(sourceFile);
-  return transformer.results_;
-};
-
-/**
- * @param {ErrorReporter} reporter
- * @param {Project} project
- * @param {ModuleSymbol}
- * @param {SourceFile} sourceFile
- * @return {ObjectMap}
- */
-ProgramTransformer.transformFileAsModule = function(reporter, project,
-                                                    module, sourceFile) {
-  var transformer = new ProgramTransformer(reporter, project);
-  transformer.transformFileAsModule_(module, sourceFile);
-  return transformer.results_;
-};

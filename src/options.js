@@ -262,14 +262,10 @@ addFeatureOption('templateLiterals', ON_BY_DEFAULT);   // 7.6.8
 
 // EXPERIMENTAL
 addFeatureOption('blockBinding', EXPERIMENTAL);       // 12.1
-addFeatureOption('createHook', EXPERIMENTAL);         // 8.3.19.2
-addFeatureOption('privateNameSyntax', EXPERIMENTAL);
-addFeatureOption('privateNames', EXPERIMENTAL);
-addFeatureOption('cascadeExpression', EXPERIMENTAL);
-addFeatureOption('trapMemberLookup', EXPERIMENTAL);
+addFeatureOption('symbols', EXPERIMENTAL);
 addFeatureOption('deferredFunctions', EXPERIMENTAL);
-addFeatureOption('propertyOptionalComma', EXPERIMENTAL);
 addFeatureOption('types', EXPERIMENTAL);
+addFeatureOption('createHook', EXPERIMENTAL);         // 8.3.19.2
 
 addBoolOption('debug');
 addBoolOption('sourceMaps');

@@ -24,13 +24,12 @@
  * TODO: Regexp literals should have their own token type.
  */
 
-import {Token} from './Token.js';
+import {Token} from './Token';
 import {
   NULL,
   NUMBER,
   STRING
-} from './TokenType.js';
-import {iterator} from '@iter';
+} from './TokenType';
 
 /**
  * Helper class for getting the processed value out of a string literal token.
@@ -44,7 +43,10 @@ class StringParser {
   constructor(value) {
     this.value = value;
     this.index = 0;  // value is wrapped in " or '
-    Object.setProperty(this, iterator, () => this);
+  }
+
+  [Symbol.iterator]() {
+    return this;
   }
 
   next() {

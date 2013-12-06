@@ -17,13 +17,13 @@ import {
   BIND,
   FUNCTION,
   PROTOTYPE
-} from '../syntax/PredefinedName.js';
+} from '../syntax/PredefinedName';
 import {
   MEMBER_EXPRESSION,
   MEMBER_LOOKUP_EXPRESSION,
   SPREAD_EXPRESSION
-} from  '../syntax/trees/ParseTreeType.js';
-import {TempVarTransformer} from './TempVarTransformer.js';
+} from  '../syntax/trees/ParseTreeType';
+import {TempVarTransformer} from './TempVarTransformer';
 import {
   createArgumentList,
   createArrayLiteralExpression,
@@ -36,21 +36,10 @@ import {
   createNewExpression,
   createNullLiteral,
   createParenExpression
-} from './ParseTreeFactory.js';
-
-// Spreads the elements in the arguments into a single array.
-// @return {Array}
-var SPREAD_CODE = `
-    function() {
-      var rv = [], k = 0;
-      for (var i = 0; i < arguments.length; i++) {
-        var value = %toObject(arguments[i]);
-        for (var j = 0; j < value.length; j++) {
-          rv[k++] = value[j];
-        }
-      }
-      return rv;
-    }`;
+} from './ParseTreeFactory';
+import {
+  parseExpression
+} from './PlaceholderParser';
 
 function hasSpreadMember(trees) {
   return trees.some((tree) => tree && tree.type == SPREAD_EXPRESSION);
@@ -63,23 +52,6 @@ function hasSpreadMember(trees) {
  * @see <a href="http://wiki.ecmascript.org/doku.php?id=harmony:spread">harmony:spread</a>
  */
 export class SpreadTransformer extends TempVarTransformer {
-  /**
-   * @param {UniqueIdentifierGenerator} identifierGenerator
-   * @param {RuntimeInliner} runtimeInliner
-   */
-  constructor(identifierGenerator, runtimeInliner) {
-    super(identifierGenerator);
-    this.runtimeInliner_ = runtimeInliner;
-  }
-
-  get spread_() {
-    return this.runtimeInliner_.get('spread', SPREAD_CODE);
-  }
-
-  get toObject_() {
-    return this.runtimeInliner_.get('toObject');
-  }
-
   /**
    * Creates an expression that results in an array where all the elements are
    * spread.
@@ -102,9 +74,8 @@ export class SpreadTransformer extends TempVarTransformer {
     // If only one argument we know it must be a spread expression so all we
     // need to do is to ensure it is an object.
     if (length === 1 && !needsNewArray) {
-      return createCallExpression(
-          this.toObject_,
-          createArgumentList(this.transformAny(elements[0].expression)));
+      var args = createArgumentList(this.transformAny(elements[0].expression));
+      return parseExpression `$traceurRuntime.toObject(${args})`;
     }
 
     // Coalesce multiple non spread elements.
@@ -128,10 +99,8 @@ export class SpreadTransformer extends TempVarTransformer {
     if (lastArray)
       args.push(createArrayLiteralExpression(lastArray));
 
-    // _spread(args)
-    return createCallExpression(
-        this.spread_,
-        createArgumentList(args));
+    return parseExpression
+        `$traceurRuntime.spread(${createArgumentList(args)})`;
   }
 
   desugarCallSpread_(tree) {
@@ -223,10 +192,5 @@ export class SpreadTransformer extends TempVarTransformer {
       return this.desugarNewSpread_(tree);
     }
     return super.transformNewExpression(tree);
-  }
-
-  static transformTree(identifierGenerator, runtimeInliner, tree) {
-    return new SpreadTransformer(identifierGenerator, runtimeInliner).
-        transformAny(tree);
   }
 }

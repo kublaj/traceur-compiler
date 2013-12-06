@@ -12,57 +12,48 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {TRACEUR_RUNTIME} from '../syntax/PredefinedName.js';
-import {VARIABLE_DECLARATION_LIST} from '../syntax/trees/ParseTreeType.js';
-import {TempVarTransformer} from './TempVarTransformer.js';
+import {TRACEUR_RUNTIME} from '../syntax/PredefinedName';
+import {VARIABLE_DECLARATION_LIST} from '../syntax/trees/ParseTreeType';
+import {TempVarTransformer} from './TempVarTransformer';
 import {
-  createIdentifierExpression,
+  createIdentifierExpression as id,
   createMemberExpression,
   createVariableStatement
-} from './ParseTreeFactory.js';
-import {parseStatement} from './PlaceholderParser.js';
+} from './ParseTreeFactory';
+import {parseStatement} from './PlaceholderParser';
+import {transformOptions} from '../options';
 
 /**
  * Desugars for-of statement.
  */
 export class ForOfTransformer extends TempVarTransformer {
-
   /**
    * @param {ForOfStatement} original
    * @return {ParseTree}
    */
   transformForOfStatement(original) {
     var tree = super.transformForOfStatement(original);
-    var iter = createIdentifierExpression(this.getTempIdentifier());
-    var result = createIdentifierExpression(this.getTempIdentifier());
+    var iter = id(this.getTempIdentifier());
+    var result = id(this.getTempIdentifier());
 
     var assignment;
-    if (tree.initializer.type === VARIABLE_DECLARATION_LIST) {
-      // {var,let} initializer = $result.value;
+    if (tree.initialiser.type === VARIABLE_DECLARATION_LIST) {
+      // {var,let} initialiser = $result.value;
       assignment = createVariableStatement(
-          tree.initializer.declarationType,
-          tree.initializer.declarations[0].lvalue,
+          tree.initialiser.declarationType,
+          tree.initialiser.declarations[0].lvalue,
           createMemberExpression(result, 'value'));
     } else {
-      assignment = parseStatement `${tree.initializer} = ${result}.value;`;
+      assignment = parseStatement `${tree.initialiser} = ${result}.value;`;
     }
-    var id = createIdentifierExpression;
 
     return parseStatement `
         for (var ${iter} =
-                 ${id(TRACEUR_RUNTIME)}.getIterator(${tree.collection}),
+                 ${tree.collection}[Symbol.iterator](),
                  ${result};
              !(${result} = ${iter}.next()).done; ) {
           ${assignment};
           ${tree.body};
         }`;
-  }
-
-  /**
-   * @param {UniqueIdentifierGenerator} identifierGenerator
-   * @param {ParseTree} tree
-   */
-  static transformTree(identifierGenerator, tree) {
-    return new ForOfTransformer(identifierGenerator).transformAny(tree);
   }
 }

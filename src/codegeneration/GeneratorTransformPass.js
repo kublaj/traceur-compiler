@@ -12,27 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {AsyncTransformer} from './generator/AsyncTransformer.js';
-import {ForInTransformPass} from './generator/ForInTransformPass.js';
+import {AsyncTransformer} from './generator/AsyncTransformer';
+import {ForInTransformPass} from './generator/ForInTransformPass';
 import {
   GetAccessor,
   SetAccessor
-} from '../syntax/trees/ParseTrees.js';
-import {GeneratorTransformer} from './generator/GeneratorTransformer.js';
-import {ParseTreeVisitor} from '../syntax/ParseTreeVisitor.js';
-import {parseStatement} from './PlaceholderParser.js';
-import {TempVarTransformer} from './TempVarTransformer.js';
-import {EQUAL} from '../syntax/TokenType.js';
+} from '../syntax/trees/ParseTrees';
+import {GeneratorTransformer} from './generator/GeneratorTransformer';
+import {ParseTreeVisitor} from '../syntax/ParseTreeVisitor';
+import {parseStatement} from './PlaceholderParser';
+import {TempVarTransformer} from './TempVarTransformer';
+import {EQUAL} from '../syntax/TokenType';
 import {
   BINARY_OPERATOR,
   COMMA_EXPRESSION,
   PAREN_EXPRESSION,
   YIELD_EXPRESSION
-} from '../syntax/trees/ParseTreeType.js';
+} from '../syntax/trees/ParseTreeType';
 import {
   FunctionDeclaration,
   FunctionExpression
-} from '../syntax/trees/ParseTrees.js';
+} from '../syntax/trees/ParseTrees';
 import {
   createAssignmentExpression,
   createAssignmentStatement,
@@ -46,18 +46,17 @@ import {
   createVariableDeclarationList,
   createVariableStatement,
   createYieldStatement
-} from './ParseTreeFactory.js';
+} from './ParseTreeFactory';
 import {
   ACTION_SEND,
   ACTION_THROW,
-  TRACEUR_RUNTIME,
   YIELD_ACTION,
   YIELD_SENT
-} from '../syntax/PredefinedName.js';
+} from '../syntax/PredefinedName';
 import {
   transformOptions,
   options
-} from '../options.js';
+} from '../options';
 
 /**
  * @param {BinaryOperator} tree
@@ -121,10 +120,10 @@ class YieldExpressionTransformer extends TempVarTransformer {
   /**
    * @param {UniqueIdentifierGenerator} identifierGenerator
    */
-  constructor(identifierGenerator) {
+  constructor(identifierGenerator, reporter) {
     super(identifierGenerator);
 
-    // Initialize unless already cached.
+    // Initialise unless already cached.
     if (!throwClose) {
       // Inserted after every simple yield expression in order to handle
       // 'throw'. No extra action is needed to handle 'next'.
@@ -180,7 +179,7 @@ class YieldExpressionTransformer extends TempVarTransformer {
     var tdd = tree.declarations.declarations;
 
     function isYieldVarAssign(tree) {
-      return tree.initializer && tree.initializer.type === YIELD_EXPRESSION;
+      return tree.initialiser && tree.initialiser.type === YIELD_EXPRESSION;
     }
 
     function varWrap(lhs, rhs) {
@@ -191,7 +190,7 @@ class YieldExpressionTransformer extends TempVarTransformer {
     }
 
     if (isYieldVarAssign(tdd[0]))
-      return this.factorAssign_(tdd[0].lvalue, tdd[0].initializer, varWrap);
+      return this.factorAssign_(tdd[0].lvalue, tdd[0].initialiser, varWrap);
 
     return tree;
   }
@@ -279,7 +278,7 @@ class YieldExpressionTransformer extends TempVarTransformer {
 
     return parseStatement `
         {
-          var ${g} = ${id(TRACEUR_RUNTIME)}.getIterator(${tree.expression});
+          var ${g} = ${tree.expression}[Symbol.iterator]();
           var ${next};
 
           // TODO: Should 'yield *' handle non-generator iterators? A strict
@@ -308,16 +307,6 @@ class YieldExpressionTransformer extends TempVarTransformer {
           }
         }`;
   }
-
-  /**
-   * @param {UniqueIdentifierGenerator} identifierGenerator
-   * @param {ParseTree} tree
-   * @return {ParseTree}
-   */
-  static transformTree(identifierGenerator, tree) {
-    return new YieldExpressionTransformer(identifierGenerator).
-        transformAny(tree);
-  }
 }
 
 /**
@@ -327,12 +316,10 @@ class YieldExpressionTransformer extends TempVarTransformer {
 export class GeneratorTransformPass extends TempVarTransformer {
   /**
    * @param {UniqueIdentifierGenerator} identifierGenerator
-   * @param {RuntimeInliner} runtimeInliner
    * @param {ErrorReporter} reporter
    */
-  constructor(identifierGenerator, runtimeInliner, reporter) {
+  constructor(identifierGenerator, reporter) {
     super(identifierGenerator);
-    this.runtimeInliner_ = runtimeInliner;
     this.reporter_ = reporter;
   }
 
@@ -361,7 +348,7 @@ export class GeneratorTransformPass extends TempVarTransformer {
     var isGenerator = false;
 
     return new constructor(null, tree.name, isGenerator,
-                           tree.formalParameterList, body);
+                           tree.formalParameterList, tree.typeAnnotation, body);
   }
 
   /**
@@ -387,16 +374,16 @@ export class GeneratorTransformPass extends TempVarTransformer {
     // cannot be interrupted.
     if (finder.hasForIn &&
         (transformOptions.generators || transformOptions.deferredFunctions)) {
-      body = ForInTransformPass.transformTree(this.identifierGenerator, body);
+      body = new ForInTransformPass(this.identifierGenerator).transformAny(body);
     }
 
     if (finder.hasYield || isGenerator) {
       if (transformOptions.generators) {
-        body = YieldExpressionTransformer.
-            transformTree(this.identifierGenerator, body);
+        body = new YieldExpressionTransformer(this.identifierGenerator,
+                                              this.reporter_).
+            transformAny(body);
 
-        body = GeneratorTransformer.transformGeneratorBody(this.runtimeInliner_,
-                                                           this.reporter_,
+        body = GeneratorTransformer.transformGeneratorBody(this.reporter_,
                                                            body);
       }
     } else if (transformOptions.deferredFunctions) {
@@ -418,6 +405,7 @@ export class GeneratorTransformPass extends TempVarTransformer {
         tree.location,
         tree.isStatic,
         tree.name,
+        tree.typeAnnotation,
         body);
   }
 
@@ -436,17 +424,5 @@ export class GeneratorTransformPass extends TempVarTransformer {
         tree.name,
         tree.parameter,
         body);
-  }
-
-  /**
-   * @param {UniqueIdentifierGenerator} identifierGenerator
-   * @param {RuntimeInliner} runtimeInliner
-   * @param {ErrorReporter} reporter
-   * @param {ParseTree} tree
-   * @return {ParseTree}
-   */
-  static transformTree(identifierGenerator, runtimeInliner, reporter, tree) {
-    return new GeneratorTransformPass(
-        identifierGenerator, runtimeInliner, reporter).transformAny(tree);
   }
 }

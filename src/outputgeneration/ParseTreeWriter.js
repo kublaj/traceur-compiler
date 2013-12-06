@@ -12,19 +12,127 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {ParseTreeVisitor} from '../syntax/ParseTreeVisitor.js';
+import {ParseTreeVisitor} from '../syntax/ParseTreeVisitor';
 import {
   AS,
   FROM,
   GET,
   OF,
   MODULE,
-  REQUIRES,
   SET
-} from '../syntax/PredefinedName.js';
-import {Token} from '../syntax/Token.js';
-import {getKeywordType} from '../syntax/Keywords.js';
-import * from '../syntax/TokenType.js';
+} from '../syntax/PredefinedName';
+import {Token} from '../syntax/Token';
+import {getKeywordType} from '../syntax/Keywords';
+
+import {
+  AMPERSAND,
+  AMPERSAND_EQUAL,
+  AND,
+  ARROW,
+  AWAIT,
+  BACK_QUOTE,
+  BANG,
+  BAR,
+  BAR_EQUAL,
+  BREAK,
+  CARET,
+  CARET_EQUAL,
+  CASE,
+  CATCH,
+  CLASS,
+  CLOSE_ANGLE,
+  CLOSE_CURLY,
+  CLOSE_PAREN,
+  CLOSE_SQUARE,
+  COLON,
+  COMMA,
+  CONST,
+  CONTINUE,
+  DEBUGGER,
+  DEFAULT,
+  DELETE,
+  DO,
+  DOT_DOT_DOT,
+  ELSE,
+  END_OF_FILE,
+  ENUM,
+  EQUAL,
+  EQUAL_EQUAL,
+  EQUAL_EQUAL_EQUAL,
+  ERROR,
+  EXPORT,
+  EXTENDS,
+  FALSE,
+  FINALLY,
+  FOR,
+  FUNCTION,
+  GREATER_EQUAL,
+  IDENTIFIER,
+  IF,
+  IMPLEMENTS,
+  IMPORT,
+  IN,
+  INSTANCEOF,
+  INTERFACE,
+  LEFT_SHIFT,
+  LEFT_SHIFT_EQUAL,
+  LESS_EQUAL,
+  LET,
+  MINUS,
+  MINUS_EQUAL,
+  MINUS_MINUS,
+  NEW,
+  NO_SUBSTITUTION_TEMPLATE,
+  NOT_EQUAL,
+  NOT_EQUAL_EQUAL,
+  NULL,
+  NUMBER,
+  OPEN_ANGLE,
+  OPEN_CURLY,
+  OPEN_PAREN,
+  OPEN_SQUARE,
+  OR,
+  PACKAGE,
+  PERCENT,
+  PERCENT_EQUAL,
+  PERIOD,
+  PLUS,
+  PLUS_EQUAL,
+  PLUS_PLUS,
+  PRIVATE,
+  PROTECTED,
+  PUBLIC,
+  QUESTION,
+  REGULAR_EXPRESSION,
+  RETURN,
+  RIGHT_SHIFT,
+  RIGHT_SHIFT_EQUAL,
+  SEMI_COLON,
+  SLASH,
+  SLASH_EQUAL,
+  STAR,
+  STAR_EQUAL,
+  STATIC,
+  STRING,
+  SUPER,
+  SWITCH,
+  TEMPLATE_HEAD,
+  TEMPLATE_MIDDLE,
+  TEMPLATE_TAIL,
+  THIS,
+  THROW,
+  TILDE,
+  TRUE,
+  TRY,
+  TYPEOF,
+  UNSIGNED_RIGHT_SHIFT,
+  UNSIGNED_RIGHT_SHIFT_EQUAL,
+  VAR,
+  VOID,
+  WHILE,
+  WITH,
+  YIELD
+} from '../syntax/TokenType';
 
 // constants
 var NEW_LINE = '\n';
@@ -140,24 +248,6 @@ export class ParseTreeWriter extends ParseTreeVisitor {
   }
 
   /**
-   * @param {AtNameExpression} tree
-   */
-  visitAtNameExpression(tree) {
-    this.write_(tree.atNameToken);
-  }
-
-  /**
-   * @param {AtNameDeclaration} tree
-   */
-  visitAtNameDeclaration(tree) {
-    this.write_(tree.atNameToken);
-    if (tree.initializer) {
-      this.write_(EQUAL);
-      this.visitAny(tree.initializer);
-    }
-  }
-
-  /**
    * @param {AwaitStatement} tree
    */
   visitAwaitStatement(tree) {
@@ -184,9 +274,9 @@ export class ParseTreeWriter extends ParseTreeVisitor {
    */
   visitBindingElement(tree) {
     this.visitAny(tree.binding);
-    if (tree.initializer) {
+    if (tree.initialiser) {
       this.write_(EQUAL);
-      this.visitAny(tree.initializer);
+      this.visitAny(tree.initialiser);
     }
   }
 
@@ -246,16 +336,6 @@ export class ParseTreeWriter extends ParseTreeVisitor {
     this.visitAny(tree.binding);
     this.write_(CLOSE_PAREN);
     this.visitAny(tree.catchBody);
-  }
-
-  /**
-   * @param {ChaineExpression} tree
-   */
-  visitCascadeExpression(tree) {
-    this.visitAny(tree.operand);
-    this.write_(PERIOD_OPEN_CURLY);
-    this.writelnList_(tree.expressions, SEMI_COLON);
-    this.write_(CLOSE_CURLY);
   }
 
   visitClassShared_(tree) {
@@ -382,6 +462,12 @@ export class ParseTreeWriter extends ParseTreeVisitor {
     this.visitAny(tree.declaration);
   }
 
+  visitExportDefault(tree) {
+    this.write_(DEFAULT);
+    this.visitAny(tree.expression);
+    this.write_(SEMI_COLON);
+  }
+
   /**
    * @param {NamedExport} tree
    */
@@ -391,6 +477,7 @@ export class ParseTreeWriter extends ParseTreeVisitor {
       this.write_(FROM);
       this.visitAny(tree.moduleSpecifier);
     }
+    this.write_(SEMI_COLON);
   }
 
   /**
@@ -442,7 +529,7 @@ export class ParseTreeWriter extends ParseTreeVisitor {
   visitForOfStatement(tree) {
     this.write_(FOR);
     this.write_(OPEN_PAREN);
-    this.visitAny(tree.initializer);
+    this.visitAny(tree.initialiser);
     this.write_(OF);
     this.visitAny(tree.collection);
     this.write_(CLOSE_PAREN);
@@ -455,7 +542,7 @@ export class ParseTreeWriter extends ParseTreeVisitor {
   visitForInStatement(tree) {
     this.write_(FOR);
     this.write_(OPEN_PAREN);
-    this.visitAny(tree.initializer);
+    this.visitAny(tree.initialiser);
     this.write_(IN);
     this.visitAny(tree.collection);
     this.write_(CLOSE_PAREN);
@@ -468,7 +555,7 @@ export class ParseTreeWriter extends ParseTreeVisitor {
   visitForStatement(tree) {
     this.write_(FOR);
     this.write_(OPEN_PAREN);
-    this.visitAny(tree.initializer);
+    this.visitAny(tree.initialiser);
     this.write_(SEMI_COLON);
     this.visitAny(tree.condition);
     this.write_(SEMI_COLON);
@@ -494,6 +581,14 @@ export class ParseTreeWriter extends ParseTreeVisitor {
 
       this.visitAny(parameter);
     }
+  }
+
+  /**
+   * @param {FormalParameter} tree
+   */
+  visitFormalParameter(tree) {
+    this.visitAny(tree.parameter);
+    this.writeTypeAnnotation_(tree.typeAnnotation);
   }
 
   /**
@@ -528,6 +623,7 @@ export class ParseTreeWriter extends ParseTreeVisitor {
     this.write_(OPEN_PAREN);
     this.visitAny(tree.formalParameterList);
     this.write_(CLOSE_PAREN);
+    this.writeTypeAnnotation_(tree.typeAnnotation);
     this.visitAny(tree.functionBody);
   }
 
@@ -548,6 +644,7 @@ export class ParseTreeWriter extends ParseTreeVisitor {
     this.visitAny(tree.name);
     this.write_(OPEN_PAREN);
     this.write_(CLOSE_PAREN);
+    this.writeTypeAnnotation_(tree.typeAnnotation);
     this.visitAny(tree.body);
   }
 
@@ -578,7 +675,7 @@ export class ParseTreeWriter extends ParseTreeVisitor {
    */
   visitImportDeclaration(tree) {
     this.write_(IMPORT);
-    this.visitAny(tree.importSpecifierSet);
+    this.visitAny(tree.importClause);
     if (tree.moduleSpecifier) {
       this.write_(FROM);
       this.visitAny(tree.moduleSpecifier);
@@ -658,17 +755,8 @@ export class ParseTreeWriter extends ParseTreeVisitor {
         '})()');
   }
 
-  /**
-   * @param {ModuleDefinition} tree
-   */
-  visitModuleDefinition(tree) {
-    this.write_(MODULE);
-    this.write_(tree.name);
-    this.write_(OPEN_CURLY);
-    this.writeln_();
-    this.writelnList_(tree.elements);
-    this.write_(CLOSE_CURLY);
-    this.writeln_();
+  visitModule(tree) {
+    this.writelnList_(tree.scriptItemList, null);
   }
 
   /**
@@ -686,15 +774,6 @@ export class ParseTreeWriter extends ParseTreeVisitor {
     this.write_(tree.identifier);
     this.write_(FROM);
     this.visitAny(tree.expression);
-    this.write_(SEMI_COLON);
-  }
-
-  /**
-   * @param {NameStatement} tree
-   */
-  visitNameStatement(tree) {
-    this.write_(PRIVATE);
-    this.writeList_(tree.declarations, COMMA, false);
     this.write_(SEMI_COLON);
   }
 
@@ -783,6 +862,7 @@ export class ParseTreeWriter extends ParseTreeVisitor {
     this.write_(OPEN_PAREN);
     this.visitAny(tree.formalParameterList);
     this.write_(CLOSE_PAREN);
+    this.writeTypeAnnotation_(tree.typeAnnotation);
     this.visitAny(tree.functionBody);
   }
 
@@ -800,7 +880,7 @@ export class ParseTreeWriter extends ParseTreeVisitor {
    */
   visitPropertyNameShorthand(tree) {
     // TODO(arv): Verify
-    this.visitAny(tree.name);
+    this.write_(tree.name);
   }
 
   /**
@@ -955,7 +1035,7 @@ export class ParseTreeWriter extends ParseTreeVisitor {
    */
   visitVariableDeclarationList(tree) {
     this.write_(tree.declarationType);
-    this.writeList_(tree.declarations, COMMA, false);
+    this.writeList_(tree.declarations, COMMA, true, 2);
   }
 
   /**
@@ -963,13 +1043,10 @@ export class ParseTreeWriter extends ParseTreeVisitor {
    */
   visitVariableDeclaration(tree) {
     this.visitAny(tree.lvalue);
-    if (tree.typeAnnotation !== null) {
-      this.write_(COLON);
-      this.visitAny(tree.typeAnnotation);
-    }
-    if (tree.initializer !== null) {
+    this.writeTypeAnnotation_(tree.typeAnnotation);
+    if (tree.initialiser !== null) {
       this.write_(EQUAL);
-      this.visitAny(tree.initializer);
+      this.visitAny(tree.initialiser);
     }
   }
 
@@ -1054,7 +1131,7 @@ export class ParseTreeWriter extends ParseTreeVisitor {
    * @param {boolean} writeNewLine
    * @private
    */
-  writeList_(list, delimiter, writeNewLine) {
+  writeList_(list, delimiter, writeNewLine, indent = 0) {
     var first = true;
     for (var i = 0; i < list.length; i++) {
       var element = list[i];
@@ -1065,11 +1142,15 @@ export class ParseTreeWriter extends ParseTreeVisitor {
           this.write_(delimiter);
         }
         if (writeNewLine) {
+          if (i === 1)
+            this.indentDepth_ += indent;
           this.writeln_();
         }
       }
       this.visitAny(element);
     }
+    if (writeNewLine && list.length > 1)
+        this.indentDepth_ -= indent;
   }
 
   /**
@@ -1110,6 +1191,13 @@ export class ParseTreeWriter extends ParseTreeVisitor {
     }
   }
 
+  writeTypeAnnotation_(typeAnnotation) {
+    if (typeAnnotation !== null) {
+      this.write_(COLON);
+      this.visitAny(typeAnnotation);
+    }
+  }
+
   /**
    * @param {string|Token|TokenType} token
    */
@@ -1133,7 +1221,6 @@ export class ParseTreeWriter extends ParseTreeVisitor {
       case GET:
       case OF:
       case MODULE:
-      case REQUIRES:
       case SET:
         return true;
     }
@@ -1166,7 +1253,6 @@ export class ParseTreeWriter extends ParseTreeVisitor {
                              // conditional expression.
       case COMMA:
       case PERIOD:
-      case PERIOD_OPEN_CURLY:
       case SEMI_COLON:
         return false;
       case CATCH:
@@ -1235,7 +1321,6 @@ export class ParseTreeWriter extends ParseTreeVisitor {
       case FROM:
       case OF:
       case MODULE:
-      case REQUIRES:
         return PRETTY_PRINT || this.isIdentifierNameOrNumber_(token);
     }
 

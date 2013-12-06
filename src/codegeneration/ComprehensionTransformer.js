@@ -12,54 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {
-  ARGUMENTS,
-  THIS
-} from '../syntax/PredefinedName.js';
-import {AlphaRenamer} from './AlphaRenamer.js';
-import {FindInFunctionScope} from './FindInFunctionScope.js';
-import {FunctionExpression} from '../syntax/trees/ParseTrees.js';
-import {TempVarTransformer} from './TempVarTransformer.js';
+import alphaRenameThisAndArguments from './alphaRenameThisAndArguments';
+import {FunctionExpression} from '../syntax/trees/ParseTrees';
+import {TempVarTransformer} from './TempVarTransformer';
 import {
   LET,
   VAR
-} from '../syntax/TokenType.js';
+} from '../syntax/TokenType';
 import {
   COMPREHENSION_FOR,
   COMPREHENSION_IF
-  } from '../syntax/trees/ParseTreeType.js';
+  } from '../syntax/trees/ParseTreeType';
 import {
   createCallExpression,
   createEmptyParameterList,
   createForOfStatement,
   createFunctionBody,
-  createIdentifierExpression,
   createIfStatement,
   createParenExpression,
-  createThisExpression,
   createVariableDeclarationList
-} from './ParseTreeFactory.js';
-import {options} from '../options.js';
-
-/**
- * This is used to find whether a function contains a reference to 'this'.
- */
-class ThisFinder extends FindInFunctionScope {
-  visitThisExpression(tree) {
-    this.found = true;
-  }
-}
-
-/**
- * This is used to find whether a function contains a reference to
- * 'arguments'.
- */
-class ArgumentsFinder extends FindInFunctionScope {
-  visitIdentifierExpression(tree) {
-    if (tree.identifierToken.value === ARGUMENTS)
-      this.found = true;
-  }
-}
+} from './ParseTreeFactory';
+import {options} from '../options';
 
 /**
  * Base class for GeneratorComprehensionTransformer and
@@ -98,36 +71,23 @@ export class ComprehensionTransformer extends TempVarTransformer {
         case COMPREHENSION_FOR:
           var left = this.transformAny(item.left);
           var iterator = this.transformAny(item.iterator);
-          var initializer = createVariableDeclarationList(bindingKind,
+          var initialiser = createVariableDeclarationList(bindingKind,
                                                           left, null);
-          statement = createForOfStatement(initializer, iterator, statement);
+          statement = createForOfStatement(initialiser, iterator, statement);
           break;
         default:
           throw new Error('Unreachable.');
       }
     }
 
-    var argumentsFinder = new ArgumentsFinder(statement);
-    if (argumentsFinder.found) {
-      var tempVar = this.addTempVar(
-          createIdentifierExpression(ARGUMENTS));
-      statement = AlphaRenamer.rename(statement, ARGUMENTS,
-                                      tempVar);
-    }
-
-    var thisFinder = new ThisFinder(statement);
-    if (thisFinder.found) {
-      var tempVar = this.addTempVar(createThisExpression());
-      statement = AlphaRenamer.rename(statement, THIS,
-                                      tempVar);
-    }
+    statement = alphaRenameThisAndArguments(this, statement);
 
     statements.push(statement);
     if (suffix)
       statements.push(suffix);
 
     var func = new FunctionExpression(null, null, isGenerator,
-                                      createEmptyParameterList(),
+                                      createEmptyParameterList(), null,
                                       createFunctionBody(statements));
 
     return createParenExpression(createCallExpression(func));

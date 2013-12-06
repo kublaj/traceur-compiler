@@ -15,14 +15,15 @@
 import {
   ARRAY_PATTERN,
   BINDING_IDENTIFIER,
+  FORMAL_PARAMETER,
   OBJECT_PATTERN,
   OBJECT_PATTERN_FIELD,
   PAREN_EXPRESSION,
   SPREAD_PATTERN_ELEMENT
-} from '../syntax/trees/ParseTreeType.js';
-import {ParseTreeVisitor} from '../syntax/ParseTreeVisitor.js';
-import {VAR} from '../syntax/TokenType.js';
-import {assert} from '../util/assert.js';
+} from '../syntax/trees/ParseTreeType';
+import {ParseTreeVisitor} from '../syntax/ParseTreeVisitor';
+import {VAR} from '../syntax/TokenType';
+import {assert} from '../util/assert';
 
 // TODO: Update once destructuring has been refactored.
 
@@ -188,7 +189,7 @@ export class VariableBinder extends ParseTreeVisitor {
       // skipping let/const declarations in nested blocks
       var decls = tree.declarations;
       for (var i = 0; i < decls.length; i++) {
-        this.visitAny(decls[i].initializer);
+        this.visitAny(decls[i].initialiser);
       }
     }
   }
@@ -207,6 +208,9 @@ export class VariableBinder extends ParseTreeVisitor {
 
   /** @param {ParseTree} parameter */
   bindParameter_(parameter) {
+    if (parameter.type === FORMAL_PARAMETER)
+      parameter = parameter.parameter;
+
     if (parameter.isRestParameter()) {
       this.bind_(parameter.identifier);
     } else {

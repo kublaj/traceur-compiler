@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {ModuleAnalyzer} from '../semantics/ModuleAnalyzer.js';
-import {Parser} from '../syntax/Parser.js';
-import {ProgramTransformer} from './ProgramTransformer.js';
-import {Project} from '../semantics/symbols/Project.js';
+import {ModuleAnalyzer} from '../semantics/ModuleAnalyzer';
+import {Parser} from '../syntax/Parser';
+import {ProgramTransformer} from './ProgramTransformer';
+import {Project} from '../semantics/symbols/Project';
 
 /**
  * @fileoverview Compiles a Traceur Project. Drives the overall compilation
@@ -39,12 +39,9 @@ export class Compiler {
   compile_() {
     this.parse_();
     this.analyze_();
-    this.transform_();
+    var results = this.transform_();
 
-    if (this.hadError_()) {
-      return null;
-    }
-    return this.results_;
+    return this.hadError_() ? null : results;
   }
 
   /**
@@ -55,12 +52,9 @@ export class Compiler {
   compileFile_(file) {
     this.parseFile_(file);
     this.analyzeFile_(file);
-    this.transformFile_(file);
+    var results = this.transformFile_(file);
 
-    if (this.hadError_()) {
-      return null;
-    }
-    return this.results_.get(file);
+    return this.hadError_() ? null : results;
   }
 
   /**
@@ -70,27 +64,26 @@ export class Compiler {
    * @private
    */
   transform_() {
-    if (this.hadError_()) {
+    if (this.hadError_())
       return;
-    }
-    this.results_ = ProgramTransformer.transform(this.reporter_,
-                                                 this.project_);
+
+    return ProgramTransformer.transform(this.reporter_, this.project_);
   }
 
   /**
    * Transform the analyzed project to standard JS.
    *
    * @param {SourceFile} sourceFile
-   * @return {void}
+   * @return {ParseTree}
    * @private
    */
   transformFile_(sourceFile) {
-    if (this.hadError_()) {
+    if (this.hadError_())
       return;
-    }
-    this.results_ = ProgramTransformer.transformFile(this.reporter_,
-                                                     this.project_,
-                                                     sourceFile);
+
+    return ProgramTransformer.transformFile(this.reporter_,
+                                            this.project_,
+                                            sourceFile);
   }
 
   /**
@@ -100,11 +93,10 @@ export class Compiler {
    * @private
    */
   analyze_() {
-    if (this.hadError_()) {
+    if (this.hadError_())
       return;
-    }
-    var analyzer = new ModuleAnalyzer(this.reporter_, this.project_);
-    analyzer.analyze();
+
+    new ModuleAnalyzer(this.reporter_, this.project_).analyze();
   }
 
   /**
@@ -115,11 +107,10 @@ export class Compiler {
    * @private
    */
   analyzeFile_(sourceFile) {
-    if (this.hadError_()) {
+    if (this.hadError_())
       return;
-    }
-    var analyzer = new ModuleAnalyzer(this.reporter_, this.project_);
-    analyzer.analyzeFile(sourceFile);
+
+    new ModuleAnalyzer(this.reporter_, this.project_).analyzeFile(sourceFile);
   }
 
   /**
@@ -141,12 +132,11 @@ export class Compiler {
    * @private
    */
   parseFile_(file) {
-    if (this.hadError_()) {
+    if (this.hadError_())
       return;
-    }
 
-    this.project_.setParseTree(
-        file, new Parser(this.reporter_, file).parseScript());
+    var tree = new Parser(this.reporter_, file).parseScript();
+    this.project_.setParseTree(file, tree);
   }
 
   /**
@@ -175,7 +165,7 @@ export class Compiler {
    * @return {ParseTree} A map from input file name to
    *     translated results. Returns null if there was a compile error.
    */
-  static compileFile(reporter, sourceFile, url, project = new Project(url)) {
+  static compileFile(reporter, sourceFile, url = sourceFile.name, project = new Project(url)) {
     project.addFile(sourceFile);
     return new Compiler(reporter, project).compileFile_(sourceFile);
   }

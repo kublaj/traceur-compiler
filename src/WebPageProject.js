@@ -15,11 +15,11 @@
 
 // A Project that can compile all of script elements in a page
 
-import {Compiler} from './codegeneration/Compiler.js';
-import {ErrorReporter} from './util/ErrorReporter.js';
-import {Project} from './semantics/symbols/Project.js';
-import {SourceFile} from './syntax/SourceFile.js';
-import {TreeWriter} from './outputgeneration/TreeWriter.js';
+import {Compiler} from './codegeneration/Compiler';
+import {ErrorReporter} from './util/ErrorReporter';
+import {Project} from './semantics/symbols/Project';
+import {SourceFile} from './syntax/SourceFile';
+import {TreeWriter} from './outputgeneration/TreeWriter';
 
 export class WebPageProject extends Project {
   constructor(url) {
@@ -68,7 +68,7 @@ export class WebPageProject extends Project {
 
   /**
    * Invent a name for inline script tags:
-   *   @return {string} the page URL, drop .html, add eg "_1.js"
+   * @return {string} the page URL, drop .html, add eg "_1.js"
    */
   nextInlineScriptName_() {
     this.numberInlined_ += 1;

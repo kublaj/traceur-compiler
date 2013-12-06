@@ -45,25 +45,6 @@
       "ParseTree"
     ]
   },
-  "AtNameDeclaration": {
-    "location": [
-      "SourceRange"
-    ],
-    "atNameToken": [
-      "AtNameToken"
-    ],
-    "initializer": [
-      "ParseTree"
-    ]
-  },
-  "AtNameExpression": {
-    "location": [
-      "SourceRange"
-    ],
-    "atNameToken": [
-      "AtNameToken"
-    ]
-  },
   "AwaitStatement": {
     "location": [
       "SourceRange"
@@ -98,7 +79,7 @@
       "ObjectPattern",
       "ArrayPattern"
     ],
-    "initializer": [
+    "initialiser": [
       "ParseTree"
     ]
   },
@@ -135,17 +116,6 @@
     ],
     "args": [
       "ArgumentList"
-    ]
-  },
-  "CascadeExpression": {
-    "location": [
-      "SourceRange"
-    ],
-    "operand": [
-      "ParseTree"
-    ],
-    "expressions": [
-      "Array.<ParseTree>"
     ]
   },
   "CaseClause": {
@@ -273,7 +243,7 @@
     "equalToken": [
       "Token"
     ],
-    "initializer": [
+    "initialiser": [
       "ParseTree"
     ]
   },
@@ -311,6 +281,14 @@
       "SourceRange"
     ],
     "declaration": [
+      "ParseTree"
+    ]
+  },
+  "ExportDefault": {
+    "location": [
+      "SourceRange"
+    ],
+    "expression": [
       "ParseTree"
     ]
   },
@@ -358,7 +336,7 @@
     "location": [
       "SourceRange"
     ],
-    "initializer": [
+    "initialiser": [
       "ParseTree"
     ],
     "collection": [
@@ -372,7 +350,7 @@
     "location": [
       "SourceRange"
     ],
-    "initializer": [
+    "initialiser": [
       "ParseTree"
     ],
     "collection": [
@@ -386,7 +364,7 @@
     "location": [
       "SourceRange"
     ],
-    "initializer": [
+    "initialiser": [
       "ParseTree"
     ],
     "condition": [
@@ -399,12 +377,23 @@
       "ParseTree"
     ]
   },
+  "FormalParameter": {
+    "location": [
+      "SourceRange"
+    ],
+    "parameter": [
+      "BindingElement"
+    ],
+    "typeAnnotation": [
+      "ParseTree"
+    ]
+  },
   "FormalParameterList": {
     "location": [
       "SourceRange"
     ],
     "parameters": [
-      "Array.<ParseTree>"
+      "Array.<FormalParameter>"
     ]
   },
   "FunctionBody": {
@@ -429,6 +418,9 @@
     "formalParameterList": [
       "FormalParameterList"
     ],
+    "typeAnnotation": [
+      "ParseTree"
+    ],
     "functionBody": [
       "FunctionBody"
     ]
@@ -445,6 +437,9 @@
     ],
     "formalParameterList": [
       "FormalParameterList"
+    ],
+    "typeAnnotation": [
+      "ParseTree"
     ],
     "functionBody": [
       "FunctionBody"
@@ -469,6 +464,9 @@
       "boolean"
     ],
     "name": [
+      "ParseTree"
+    ],
+    "typeAnnotation": [
       "ParseTree"
     ],
     "body": [
@@ -497,11 +495,19 @@
       "ParseTree"
     ]
   },
+  "ImportedBinding": {
+    "location": [
+      "SourceRange"
+    ],
+    "binding": [
+      "ParseTree"
+    ]
+  },
   "ImportDeclaration": {
     "location": [
       "SourceRange"
     ],
-    "importSpecifierSet": [
+    "importClause": [
       "ParseTree"
     ],
     "moduleSpecifier": [
@@ -563,7 +569,6 @@
       "ParseTree"
     ],
     "memberName": [
-      "AtNameToken",
       "IdentifierToken"
     ]
   },
@@ -578,6 +583,17 @@
       "ParseTree"
     ]
   },
+  "Module": {
+    "location": [
+      "SourceRange"
+    ],
+    "scriptItemList": [
+      "Array.<ParseTree>"
+    ],
+    "url": [
+      "string"
+    ]
+  },
   "ModuleDeclaration": {
     "location": [
       "SourceRange"
@@ -587,17 +603,6 @@
     ],
     "expression": [
       "ParseTree"
-    ]
-  },
-  "ModuleDefinition": {
-    "location": [
-      "SourceRange"
-    ],
-    "name": [
-      "IdentifierToken"
-    ],
-    "elements": [
-      "Array.<ParseTree>"
     ]
   },
   "ModuleSpecifier": {
@@ -617,14 +622,6 @@
     ],
     "specifierSet": [
       "ParseTree"
-    ]
-  },
-  "NameStatement": {
-    "location": [
-      "SourceRange"
-    ],
-    "declarations": [
-      "Array.<AtNameDeclaration>"
     ]
   },
   "NewExpression": {
@@ -698,6 +695,9 @@
     ],
     "scriptItemList": [
       "Array.<ParseTree>"
+    ],
+    "url": [
+      "string"
     ]
   },
   "PropertyMethodAssignment": {
@@ -715,6 +715,9 @@
     ],
     "formalParameterList": [
       "FormalParameterList"
+    ],
+    "typeAnnotation": [
+      "ParseTree"
     ],
     "functionBody": [
       "FunctionBody"
@@ -766,7 +769,7 @@
       "ParseTree"
     ],
     "parameter": [
-      "BindingElement"
+      "FormalParameter"
     ],
     "body": [
       "FunctionBody"
@@ -901,7 +904,7 @@
     "typeAnnotation": [
       "ParseTree"
     ],
-    "initializer": [
+    "initialiser": [
       "ParseTree"
     ]
   },

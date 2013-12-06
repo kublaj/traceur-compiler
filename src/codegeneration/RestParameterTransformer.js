@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {FormalParameterList} from '../syntax/trees/ParseTrees.js';
-import {ParameterTransformer} from './ParameterTransformer.js';
-import {createIdentifierToken} from './ParseTreeFactory.js';
-import {parseStatement} from './PlaceholderParser.js';
+import {FormalParameterList} from '../syntax/trees/ParseTrees';
+import {ParameterTransformer} from './ParameterTransformer';
+import {createIdentifierToken} from './ParseTreeFactory';
+import {parseStatement} from './PlaceholderParser';
 
 function hasRestParameter(formalParameterList) {
   var parameters = formalParameterList.parameters;
@@ -25,7 +25,7 @@ function hasRestParameter(formalParameterList) {
 
 function getRestParameterLiteralToken(formalParameterList) {
   var parameters = formalParameterList.parameters;
-  return parameters[parameters.length - 1].identifier.identifierToken;
+  return parameters[parameters.length - 1].parameter.identifier.identifierToken;
 }
 
 /**
@@ -63,14 +63,5 @@ export class RestParameterTransformer extends ParameterTransformer {
     }
 
     return transformed;
-  }
-
-  /**
-   * @param {UniqueIdentifierGenerator} identifierGenerator
-   * @param {ParseTree} tree
-   * @return {ParseTree}
-   */
-  static transformTree(identifierGenerator, tree) {
-    return new RestParameterTransformer(identifierGenerator).transformAny(tree);
   }
 }

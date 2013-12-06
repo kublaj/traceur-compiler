@@ -12,23 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {ModuleVisitor} from './ModuleVisitor.js';
-
-function getFriendlyName(module) {
-  return module.name || "'" + module.url + "'";
-}
+import {ModuleVisitor} from './ModuleVisitor';
 
 /**
- * Visits a parse tree and validates all module expressions.
+ * Validates that symbols are exported when we extract them.
  *
- *   module m from n, o from p.q.r
+ *   export {a as b} from 'm'
+ *   import {c as d} from 'n'
+ *
+ * validates that 'm' exports a and that 'n' exports c.
  */
 export class ValidationVisitor extends ModuleVisitor {
 
   checkExport_(tree, name) {
-    if (this.validatingModule_ && !this.validatingModule_.hasExport(name)) {
-      this.reportError_(tree, '\'%s\' is not exported by %s', name,
-          getFriendlyName(this.validatingModule_));
+    var module = this.validatingModule_;
+    if (module && !module.hasExport(name)) {
+      var url = module.url;
+      this.reportError(tree, `'${name}' is not exported by '${url}'`);
     }
   }
 
@@ -50,9 +50,7 @@ export class ValidationVisitor extends ModuleVisitor {
     // Ensures that the module expression exports the names we want to
     // re-export.
     if (tree.moduleSpecifier) {
-      this.visitAny(tree.moduleSpecifier);
-      var module = this.getModuleForModuleSpecifier(tree.moduleSpecifier,
-          true /* reportErrors */);
+      var module = this.getModuleForModuleSpecifier(tree.moduleSpecifier);
       this.visitAndValidate_(module, tree.specifierSet);
     }
     // The else case is checked else where and duplicate exports are caught
@@ -60,24 +58,24 @@ export class ValidationVisitor extends ModuleVisitor {
   }
 
   visitExportSpecifier(tree) {
+    // export {a as b} from 'm'
     this.checkExport_(tree, tree.lhs.value);
   }
 
-  visitIdentifierExpression(tree) {
-    this.checkExport_(tree, tree.identifierToken.value);
-  }
-
   visitModuleSpecifier(tree) {
-    this.getModuleForModuleSpecifier(tree, true /* reportErrors */);
+    this.getModuleForModuleSpecifier(tree);
   }
 
   visitImportDeclaration(tree) {
-    var module = this.getModuleForModuleSpecifier(tree.moduleSpecifier,
-        true /* reportErrors */);
-    this.visitAndValidate_(module, tree.importSpecifierSet);
+    var module = this.getModuleForModuleSpecifier(tree.moduleSpecifier);
+    this.visitAndValidate_(module, tree.importClause);
   }
 
   visitImportSpecifier(tree) {
     this.checkExport_(tree, tree.lhs.value);
+  }
+
+  visitImportedBinding(tree) {
+    this.checkExport_(tree, 'default');
   }
 }

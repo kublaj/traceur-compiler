@@ -11,71 +11,146 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-System.set('@traceur/module', (function() {
+System.set('@traceur/module', (function(global) {
   'use strict';
+
+  var {ModuleImpl} = System.get('@traceur/module');
 
   var {resolveUrl, isStandardModuleUrl} = System.get('@traceur/url');
 
-  var modules = Object.create(null);
+  var moduleImplementations = Object.create(null);
 
-  var refererUrl = './';
+  // Until ecmascript defines System.normalize/resolve we follow requirejs
+  // for module ids, http://requirejs.org/docs/api.html
+  // "default baseURL is the directory that contains the HTML page"
+  var baseURL;
+  if (global.location && global.location.href)
+    baseURL = resolveUrl(global.location.href, './');
+  else
+    baseURL = '';
 
-  function setRefererUrl(url) {
-    refererUrl = url || './';
+  function registerModule(url, func, self) {
+    url = System.normalResolve(url);
+    moduleImplementations[url] = new ModuleImpl(url, func, self);
+
   }
 
-  function getRefererUrl() {
-    return refererUrl;
-  }
+  Object.defineProperty(System, 'baseURL', {
+    get: function() {
+      return baseURL;
+    },
+    set: function(v) {
+      baseURL = String(v);
+    },
+    enumerable: true,
+    configurable: true
+  });
 
-  class PendingModule {
-    constructor(name, func, self) {
-      this.name = name;
-      this.func = func;
-      this.self = self;
-    }
-    toModule() {
-      var oldName = refererUrl;
-      refererUrl = this.name;
-      try {
-        return this.func.call(this.self);
-      } finally {
-        refererUrl = oldName
-      }
-    }
-  }
+  System.normalize = function(requestedModuleName, options) {
+    var importingModuleName = options && options.referer && options.referer.name;
+    importingModuleName = importingModuleName || baseURL;
+    if (importingModuleName && requestedModuleName)
+      return resolveUrl(importingModuleName, requestedModuleName);
+    return requestedModuleName;
+  };
 
-  function registerModule(name, func, self) {
-    var url = resolveUrl(refererUrl, name);
-    modules[url] = new PendingModule(name, func, self);
-  }
+  System.resolve = function(normalizedModuleName) {
+    if (isStandardModuleUrl(normalizedModuleName))
+      return normalizedModuleName;
+    var asJS = normalizedModuleName + '.js';
+    // ----- Hack for self-hosting compiler -----
+    if (/\.js$/.test(normalizedModuleName))
+      asJS = normalizedModuleName;
+    // ----------------------------------------------------
+    if (baseURL)
+      return resolveUrl(baseURL, asJS);
+    return asJS;
+  };
 
   // Now it is safe to override System.{get,set} to use resolveUrl.
   var $get = System.get;
   var $set = System.set;
 
-  System.get = function(name) {
-    if (isStandardModuleUrl(name))
-      return $get(name);
+  // Non-standard API, remove see issue #393
+  System.normalResolve = function(name, importingModuleName) {
+    if (/@.*\.js/.test(name))
+      throw new Error(`System.normalResolve illegal standard module name ${name}`);
+    var options = {
+      referer: {
+        name: importingModuleName || baseURL
+      }
+    };
+    return System.resolve(System.normalize(name, options));
+  };
 
-    var url = resolveUrl(refererUrl, name);
-    var module = modules[url];
-    if (module instanceof PendingModule)
-      return modules[url] = module.toModule();
-    return module;
+  function getModuleImpl(name) {
+    if (!name)
+      return;
+    if (isStandardModuleUrl(name))
+      return {url: name, value: $get(name)};
+    var url = System.normalResolve(name);
+    return moduleImplementations[url];
+  };
+
+  var moduleInstances = Object.create(null);
+
+  var liveModuleSentinel = {};
+
+  function Module(obj, isLive = undefined) {
+    // Module instances acquired using `module m from 'name'` should have live
+    // references so when we create these internally we pass a sentinel.
+    Object.getOwnPropertyNames(obj).forEach((name) => {
+      var getter, value;
+      if (isLive === liveModuleSentinel) {
+        var descr = Object.getOwnPropertyDescriptor(obj, name);
+        // Some internal modules do not use getters at this point.
+        if (descr.get)
+          getter = descr.get;
+      }
+      if (!getter) {
+        value = obj[name];
+        getter = function() {
+          return value;
+        };
+      }
+
+      Object.defineProperty(this, name, {
+        get: getter,
+        enumerable: true
+      });
+    });
+    this.__proto__ = null;
+    Object.preventExtensions(this);
+  }
+
+  System.get = function(name) {
+    var m = getModuleImpl(name);
+    if (!m)
+      return undefined;
+    var moduleInstance = moduleInstances[m.url];
+    if (moduleInstance)
+      return moduleInstance;
+
+    moduleInstance = new Module(m.value, liveModuleSentinel);
+    return moduleInstances[m.url] = moduleInstance;
   };
 
   System.set = function(name, object) {
-    if (isStandardModuleUrl(name))
+    name = String(name);
+    if (isStandardModuleUrl(name)) {
       $set(name, object);
-    else
-      modules[resolveUrl(refererUrl, name)] = object;
+    } else {
+      moduleImplementations[name] = {
+        url: name,
+        value: object
+      };
+    }
   };
 
   return {
-    getRefererUrl,
     registerModule,
-    setRefererUrl,
+    getModuleImpl(name) {
+      return getModuleImpl(name).value;
+    }
   };
-})());
+})(this));
