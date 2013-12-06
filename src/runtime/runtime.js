@@ -706,11 +706,21 @@
     });
   }
 
+  function newFunc(func, argumentsList) {
+    var creator = func[toProperty(Symbol.create)];
+    var obj;
+    if (creator === void 0)
+      obj = $create(func.prototype);
+    else
+      obj = creator.call(func)
+    var result = func.apply(obj, argumentsList);
+    return result && $Object(result) === result ? result : obj;
+  }
+
   function setupGlobals(global) {
-    if (!global.Symbol)
-      global.Symbol = Symbol;
-    if (!global.Symbol.iterator)
-      global.Symbol.iterator = Symbol();
+    // V8 has experimental support for Symbols but withou getOwnPropertySymbols
+    // we cannot use them.
+    global.Symbol = Symbol;
 
     polyfillString(global.String);
     polyfillObject(global.Object);
@@ -728,6 +738,7 @@
     Deferred: Deferred,
     exportStar: exportStar,
     generatorWrap: generatorWrap,
+    new: newFunc,
     setProperty: setProperty,
     setupGlobals: setupGlobals,
     spread: spread,

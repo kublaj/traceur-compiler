@@ -26,6 +26,7 @@ import {GeneratorComprehensionTransformer} from
 import {GeneratorTransformPass} from './GeneratorTransformPass';
 import {ModuleTransformer} from './ModuleTransformer';
 import {MultiTransformer} from './MultiTransformer';
+import {NewTransformer} from './NewTransformer';
 import {NumericLiteralTransformer} from './NumericLiteralTransformer';
 import {ObjectLiteralTransformer} from './ObjectLiteralTransformer';
 import {ObjectMap} from '../util/ObjectMap';
@@ -127,6 +128,9 @@ export class FromOptionsTransformer extends MultiTransformer {
       append(SymbolTransformer);
       append(TypeofTransformer);
     }
+
+    if (transformOptions.createHook)
+      append(NewTransformer);
 
     // Issue errors for any unbound variables
     if (options.freeVariableChecker) {

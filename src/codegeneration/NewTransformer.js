@@ -19,18 +19,6 @@ import {
 } from './ParseTreeFactory.js';
 import {parseExpression} from './PlaceholderParser.js';
 
-var NEW_CODE = `
-    function(func, argumentsList) {
-      var creator = $traceurRuntime.getCreator(func);
-      var obj;
-      if (creator === void 0)
-        obj = Object.create(func.prototype);
-      else
-        obj = creator.call(func)
-      var result = func.apply(obj, argumentsList);
-      return result && Object(result) === result ? result : obj;
-    }`;
-
 /**
  * Desugars new to allow @@create class side methods.
  *
@@ -38,20 +26,9 @@ var NEW_CODE = `
  *
  *  =>
  *
- *  $__construct(expr, [params])
+ *  $traceurRuntime.new(expr, [params])
  */
 export class NewTransformer extends ParseTreeTransformer {
-  /**
-   * @param {RuntimeInliner} runtimeInliner
-   */
-  constructor(runtimeInliner) {
-    this.runtimeInliner_ = runtimeInliner;
-  }
-
-  get new_() {
-    return this.runtimeInliner_.get('new', NEW_CODE);
-  }
-
   transformNewExpression(tree) {
     var operand = this.transformAny(tree.operand);
     var args = this.transformAny(tree.args);
@@ -59,10 +36,6 @@ export class NewTransformer extends ParseTreeTransformer {
         createEmptyArrayLiteralExpression() :
         createArrayLiteralExpression(args.args);
 
-    return parseExpression `${this.new_}(${operand}, ${array})`;
-  }
-
-  static transformTree(runtimeInliner, tree) {
-    return new NewTransformer(runtimeInliner).transformAny(tree);
+    return parseExpression `$traceurRuntime.new(${operand}, ${array})`;
   }
 };
