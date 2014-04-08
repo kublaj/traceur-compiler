@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import {toSource} from './toSource';
+import {ParenTransformer} from './ParenTransformer';
 
 /**
  * Create a ParseTreeWriter configured with options, apply it to tree
@@ -25,6 +26,7 @@ import {toSource} from './toSource';
  * @return source code; optional side-effect options.sourceMap set
  */
 export function write(tree, options = undefined) {
+  tree = new ParenTransformer().transformAny(tree);
   var [result, sourceMap] = toSource(tree, options);
   if (sourceMap)
     options.sourceMap = sourceMap;
