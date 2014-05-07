@@ -20897,12 +20897,33 @@ System.register("traceur@0.0.40/src/codegeneration/TypeTransformer", [], functio
 System.register("traceur@0.0.40/src/codegeneration/UniqueIdentifierGenerator", [], function() {
   "use strict";
   var __moduleName = "traceur@0.0.40/src/codegeneration/UniqueIdentifierGenerator";
+  var ParseTreeVisitor = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/syntax/ParseTreeVisitor")).ParseTreeVisitor;
   var UniqueIdentifierGenerator = function UniqueIdentifierGenerator() {
+    var tree = arguments[0];
     this.identifierIndex = 0;
+    this.blacklistedNames = Object.create(null);
   };
-  ($traceurRuntime.createClass)(UniqueIdentifierGenerator, {generateUniqueIdentifier: function() {
-      return ("$__" + this.identifierIndex++);
-    }}, {});
+  ($traceurRuntime.createClass)(UniqueIdentifierGenerator, {
+    generateUniqueIdentifier: function() {
+      while (true) {
+        var name = ("$__" + this.identifierIndex++);
+        if (!this.blacklistedNames[name])
+          return name;
+      }
+    },
+    blacklistBindingNames: function(tree) {
+      var visitor = new BlacklistBindingNamesVisitor(this.blacklistedNames);
+      visitor.visitAny(tree);
+    }
+  }, {});
+  var re = /^\$__\d+$/;
+  var BlacklistBindingNamesVisitor = function BlacklistBindingNamesVisitor(names) {
+    this.names = names;
+  };
+  ($traceurRuntime.createClass)(BlacklistBindingNamesVisitor, {visitBindingIdentifier: function(tree) {
+      var name = tree.identifierToken.value;
+      this.names[name] = true;
+    }}, {}, ParseTreeVisitor);
   return {get UniqueIdentifierGenerator() {
       return UniqueIdentifierGenerator;
     }};
@@ -20940,15 +20961,15 @@ System.register("traceur@0.0.40/src/codegeneration/FromOptionsTransformer", [], 
   var TypeAssertionTransformer = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/codegeneration/TypeAssertionTransformer")).TypeAssertionTransformer;
   var TypeToExpressionTransformer = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/codegeneration/TypeToExpressionTransformer")).TypeToExpressionTransformer;
   var UniqueIdentifierGenerator = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/codegeneration/UniqueIdentifierGenerator")).UniqueIdentifierGenerator;
-  var $__333 = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/options")),
-      options = $__333.options,
-      transformOptions = $__333.transformOptions;
+  var $__334 = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/options")),
+      options = $__334.options,
+      transformOptions = $__334.transformOptions;
   var FromOptionsTransformer = function FromOptionsTransformer(reporter) {
     var idGenerator = arguments[1] !== (void 0) ? arguments[1] : new UniqueIdentifierGenerator();
-    var $__331 = this;
+    var $__332 = this;
     $traceurRuntime.superCall(this, $FromOptionsTransformer.prototype, "constructor", [reporter, options.validate]);
     var append = (function(transformer) {
-      $__331.append((function(tree) {
+      $__332.append((function(tree) {
         return new transformer(idGenerator, reporter).transformAny(tree);
       }));
     });
@@ -21032,9 +21053,9 @@ System.register("traceur@0.0.40/src/codegeneration/module/AttachModuleNameTransf
   "use strict";
   var __moduleName = "traceur@0.0.40/src/codegeneration/module/AttachModuleNameTransformer";
   var ParseTreeTransformer = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/codegeneration/ParseTreeTransformer")).ParseTreeTransformer;
-  var $__335 = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/syntax/trees/ParseTrees")),
-      Module = $__335.Module,
-      Script = $__335.Script;
+  var $__336 = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/syntax/trees/ParseTrees")),
+      Module = $__336.Module,
+      Script = $__336.Script;
   var AttachModuleNameTransformer = function AttachModuleNameTransformer(moduleName) {
     this.moduleName_ = moduleName;
   };
@@ -21324,9 +21345,9 @@ System.register("traceur@0.0.40/src/runtime/LoaderHooks", [], function() {
   var SourceFile = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/syntax/SourceFile")).SourceFile;
   var systemjs = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/runtime/system-map")).systemjs;
   var UniqueIdentifierGenerator = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/codegeneration/UniqueIdentifierGenerator")).UniqueIdentifierGenerator;
-  var $__344 = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/util/url")),
-      isAbsolute = $__344.isAbsolute,
-      resolveUrl = $__344.resolveUrl;
+  var $__345 = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/util/url")),
+      isAbsolute = $__345.isAbsolute,
+      resolveUrl = $__345.resolveUrl;
   var webLoader = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/runtime/webLoader")).webLoader;
   var assert = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/util/assert")).assert;
   var NOT_STARTED = 0;
@@ -21397,14 +21418,14 @@ System.register("traceur@0.0.40/src/runtime/LoaderHooks", [], function() {
       return transformer.transform(transformedTree);
     },
     fetch: function(load) {
-      var $__342 = this;
+      var $__343 = this;
       return new Promise((function(resolve, reject) {
         if (!load)
           reject(new TypeError('fetch requires argument object'));
         else if (!load.address || typeof load.address !== 'string')
           reject(new TypeError('fetch({address}) missing required string.'));
         else
-          $__342.fileLoader.load(load.address, resolve, reject);
+          $__343.fileLoader.load(load.address, resolve, reject);
       }));
     },
     translate: function(load) {
@@ -21412,12 +21433,12 @@ System.register("traceur@0.0.40/src/runtime/LoaderHooks", [], function() {
         resolve(load.source);
       }));
     },
-    instantiate: function($__344) {
-      var name = $__344.name,
-          metadata = $__344.metadata,
-          address = $__344.address,
-          source = $__344.source,
-          sourceMap = $__344.sourceMap;
+    instantiate: function($__345) {
+      var name = $__345.name,
+          metadata = $__345.metadata,
+          address = $__345.address,
+          source = $__345.source,
+          sourceMap = $__345.sourceMap;
       return new Promise((function(resolve, reject) {
         resolve(undefined);
       }));
@@ -21506,17 +21527,17 @@ System.register("traceur@0.0.40/src/runtime/InterceptOutputLoaderHooks", [], fun
   var LoaderHooks = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/runtime/LoaderHooks")).LoaderHooks;
   var InterceptOutputLoaderHooks = function InterceptOutputLoaderHooks() {
     for (var args = [],
-        $__346 = 0; $__346 < arguments.length; $__346++)
-      args[$__346] = arguments[$__346];
+        $__347 = 0; $__347 < arguments.length; $__347++)
+      args[$__347] = arguments[$__347];
     $traceurRuntime.superCall(this, $InterceptOutputLoaderHooks.prototype, "constructor", $traceurRuntime.spread(args));
     this.sourceMap = null;
     this.transcoded = null;
     this.onTranscoded = (function() {});
   };
   var $InterceptOutputLoaderHooks = InterceptOutputLoaderHooks;
-  ($traceurRuntime.createClass)(InterceptOutputLoaderHooks, {instantiate: function($__347) {
-      var metadata = $__347.metadata,
-          url = $__347.url;
+  ($traceurRuntime.createClass)(InterceptOutputLoaderHooks, {instantiate: function($__348) {
+      var metadata = $__348.metadata,
+          url = $__348.url;
       this.sourceMap = metadata.sourceMap;
       this.transcoded = metadata.transcoded;
       this.onTranscoded(metadata, url);
@@ -21532,10 +21553,10 @@ System.register("traceur@0.0.40/src/runtime/InternalLoader", [], function() {
   var ArrayMap = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/util/ArrayMap")).ArrayMap;
   var LoaderHooks = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/runtime/LoaderHooks")).LoaderHooks;
   var ObjectMap = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/util/ObjectMap")).ObjectMap;
-  var $__350 = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/util/url")),
-      canonicalizeUrl = $__350.canonicalizeUrl,
-      isAbsolute = $__350.isAbsolute,
-      resolveUrl = $__350.resolveUrl;
+  var $__351 = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/util/url")),
+      canonicalizeUrl = $__351.canonicalizeUrl,
+      isAbsolute = $__351.isAbsolute,
+      resolveUrl = $__351.resolveUrl;
   var getUid = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/util/uid")).getUid;
   var toSource = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/outputgeneration/toSource")).toSource;
   var NOT_STARTED = 0;
@@ -21548,23 +21569,23 @@ System.register("traceur@0.0.40/src/runtime/InternalLoader", [], function() {
   var ERROR = 7;
   var global = this;
   var CodeUnit = function CodeUnit(loaderHooks, normalizedName, type, state, name, referrerName, address) {
-    var $__348 = this;
+    var $__349 = this;
     this.promise = new Promise((function(res, rej) {
-      $__348.loaderHooks = loaderHooks;
-      $__348.normalizedName = normalizedName;
-      $__348.type = type;
-      $__348.name_ = name;
-      $__348.referrerName_ = referrerName;
-      $__348.address_ = address;
-      $__348.url = InternalLoader.uniqueName(normalizedName, address);
-      $__348.uid = getUid();
-      $__348.state_ = state || NOT_STARTED;
-      $__348.error = null;
-      $__348.result = null;
-      $__348.data_ = {};
-      $__348.dependencies = [];
-      $__348.resolve = res;
-      $__348.reject = rej;
+      $__349.loaderHooks = loaderHooks;
+      $__349.normalizedName = normalizedName;
+      $__349.type = type;
+      $__349.name_ = name;
+      $__349.referrerName_ = referrerName;
+      $__349.address_ = address;
+      $__349.url = InternalLoader.uniqueName(normalizedName, address);
+      $__349.uid = getUid();
+      $__349.state_ = state || NOT_STARTED;
+      $__349.error = null;
+      $__349.result = null;
+      $__349.data_ = {};
+      $__349.dependencies = [];
+      $__349.resolve = res;
+      $__349.reject = rej;
     }));
   };
   ($traceurRuntime.createClass)(CodeUnit, {
@@ -21624,9 +21645,9 @@ System.register("traceur@0.0.40/src/runtime/InternalLoader", [], function() {
       return this.deps;
     },
     evaluate: function() {
-      var $__348 = this;
+      var $__349 = this;
       var normalizedNames = this.deps.map((function(name) {
-        return $__348.loaderHooks.normalize(name);
+        return $__349.loaderHooks.normalize(name);
       }));
       var module = this.execute.apply(global, normalizedNames);
       System.set(this.normalizedName, module);
@@ -21679,7 +21700,7 @@ System.register("traceur@0.0.40/src/runtime/InternalLoader", [], function() {
       }));
     },
     load_: function(name, referrerName, address, type) {
-      var $__348 = this;
+      var $__349 = this;
       var codeUnit = this.getCodeUnit_(name, referrerName, address, type);
       if (codeUnit.state === ERROR) {
         return codeUnit;
@@ -21697,14 +21718,14 @@ System.register("traceur@0.0.40/src/runtime/InternalLoader", [], function() {
         })).then(this.loaderHooks.translate.bind(this.loaderHooks)).then((function(source) {
           codeUnit.source = source;
           codeUnit.state = LOADED;
-          $__348.handleCodeUnitLoaded(codeUnit);
+          $__349.handleCodeUnitLoaded(codeUnit);
           return codeUnit;
         })).catch((function(err) {
           try {
             codeUnit.state = ERROR;
             codeUnit.abort = function() {};
             codeUnit.err = err;
-            $__348.handleCodeUnitLoadError(codeUnit);
+            $__349.handleCodeUnitLoadError(codeUnit);
           } catch (ex) {
             console.error('Internal Error ' + (ex.stack || ex));
           }
@@ -21784,7 +21805,7 @@ System.register("traceur@0.0.40/src/runtime/InternalLoader", [], function() {
       return this.getCodeUnit_(name, referrerName, null, 'module');
     },
     handleCodeUnitLoaded: function(codeUnit) {
-      var $__348 = this;
+      var $__349 = this;
       var referrerName = codeUnit.normalizedName;
       var moduleSpecifiers = codeUnit.getModuleSpecifiers();
       if (!moduleSpecifiers) {
@@ -21792,10 +21813,10 @@ System.register("traceur@0.0.40/src/runtime/InternalLoader", [], function() {
         return;
       }
       codeUnit.dependencies = moduleSpecifiers.sort().map((function(name) {
-        return $__348.getCodeUnit_(name, referrerName, null, 'module');
+        return $__349.getCodeUnit_(name, referrerName, null, 'module');
       }));
       codeUnit.dependencies.forEach((function(dependency) {
-        $__348.load(dependency.normalizedName, null, null, 'module');
+        $__349.load(dependency.normalizedName, null, null, 'module');
       }));
       if (this.areAll(PARSED)) {
         this.analyze();
@@ -21848,7 +21869,7 @@ System.register("traceur@0.0.40/src/runtime/InternalLoader", [], function() {
       this.checkForErrors(dependencies, 'transform');
     },
     transformCodeUnit: function(codeUnit) {
-      var $__350;
+      var $__351;
       this.transformDependencies(codeUnit.dependencies, codeUnit.normalizedName);
       if (codeUnit.state === ERROR)
         return;
@@ -21856,7 +21877,7 @@ System.register("traceur@0.0.40/src/runtime/InternalLoader", [], function() {
       metadata.transformedTree = codeUnit.transform();
       codeUnit.state = TRANSFORMED;
       var filename = codeUnit.address || codeUnit.normalizedName;
-      ($__350 = $traceurRuntime.assertObject(toSource(metadata.transformedTree, this.options, filename)), metadata.transcoded = $__350[0], metadata.sourceMap = $__350[1], $__350);
+      ($__351 = $traceurRuntime.assertObject(toSource(metadata.transformedTree, this.options, filename)), metadata.transcoded = $__351[0], metadata.sourceMap = $__351[1], $__351);
       if (codeUnit.address && metadata.transcoded)
         metadata.transcoded += '//# sourceURL=' + codeUnit.address;
     },
@@ -21955,24 +21976,24 @@ System.register("traceur@0.0.40/src/runtime/Loader", [], function() {
   };
   ($traceurRuntime.createClass)(Loader, {
     import: function(name) {
-      var $__353 = $traceurRuntime.assertObject(arguments[1] !== (void 0) ? arguments[1] : {}),
-          referrerName = $__353.referrerName,
-          address = $__353.address;
-      var $__351 = this;
+      var $__354 = $traceurRuntime.assertObject(arguments[1] !== (void 0) ? arguments[1] : {}),
+          referrerName = $__354.referrerName,
+          address = $__354.address;
+      var $__352 = this;
       return this.internalLoader_.load(name, referrerName, address, 'module').then((function(codeUnit) {
-        return $__351.get(codeUnit.normalizedName);
+        return $__352.get(codeUnit.normalizedName);
       }));
     },
     module: function(source) {
-      var $__353 = $traceurRuntime.assertObject(arguments[1] !== (void 0) ? arguments[1] : {}),
-          referrerName = $__353.referrerName,
-          address = $__353.address;
+      var $__354 = $traceurRuntime.assertObject(arguments[1] !== (void 0) ? arguments[1] : {}),
+          referrerName = $__354.referrerName,
+          address = $__354.address;
       return this.internalLoader_.module(source, referrerName, address);
     },
     define: function(normalizedName, source) {
-      var $__353 = $traceurRuntime.assertObject(arguments[2] !== (void 0) ? arguments[2] : {}),
-          address = $__353.address,
-          metadata = $__353.metadata;
+      var $__354 = $traceurRuntime.assertObject(arguments[2] !== (void 0) ? arguments[2] : {}),
+          address = $__354.address,
+          metadata = $__354.metadata;
       return this.internalLoader_.define(normalizedName, source, address, metadata);
     },
     get: function(normalizedName) {
@@ -22021,14 +22042,14 @@ System.register("traceur@0.0.40/src/WebPageTranscoder", [], function() {
   };
   ($traceurRuntime.createClass)(WebPageTranscoder, {
     asyncLoad_: function(url, fncOfContent, onScriptsReady) {
-      var $__354 = this;
+      var $__355 = this;
       this.numPending_++;
       webLoader.load(url, (function(content) {
         if (content)
           fncOfContent(content);
         else
           console.warn('Failed to load', url);
-        if (--$__354.numPending_ <= 0)
+        if (--$__355.numPending_ <= 0)
           onScriptsReady();
       }), (function(error) {
         console.error('WebPageTranscoder FAILED to load ' + url, error);
@@ -22096,13 +22117,13 @@ System.register("traceur@0.0.40/src/WebPageTranscoder", [], function() {
     },
     run: function() {
       var done = arguments[0] !== (void 0) ? arguments[0] : (function() {});
-      var $__354 = this;
+      var $__355 = this;
       var ready = document.readyState;
       if (ready === 'complete' || ready === 'loaded') {
         this.selectAndProcessScripts(done);
       } else {
         document.addEventListener('DOMContentLoaded', (function() {
-          return $__354.selectAndProcessScripts(done);
+          return $__355.selectAndProcessScripts(done);
         }), false);
       }
     }
@@ -22115,24 +22136,24 @@ System.register("traceur@0.0.40/src/codegeneration/CloneTreeTransformer", [], fu
   "use strict";
   var __moduleName = "traceur@0.0.40/src/codegeneration/CloneTreeTransformer";
   var ParseTreeTransformer = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/codegeneration/ParseTreeTransformer")).ParseTreeTransformer;
-  var $__358 = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/syntax/trees/ParseTrees")),
-      BindingIdentifier = $__358.BindingIdentifier,
-      BreakStatement = $__358.BreakStatement,
-      ContinueStatement = $__358.ContinueStatement,
-      DebuggerStatement = $__358.DebuggerStatement,
-      EmptyStatement = $__358.EmptyStatement,
-      ExportSpecifier = $__358.ExportSpecifier,
-      ExportStar = $__358.ExportStar,
-      IdentifierExpression = $__358.IdentifierExpression,
-      ImportSpecifier = $__358.ImportSpecifier,
-      LiteralExpression = $__358.LiteralExpression,
-      ModuleSpecifier = $__358.ModuleSpecifier,
-      PredefinedType = $__358.PredefinedType,
-      PropertyNameShorthand = $__358.PropertyNameShorthand,
-      TemplateLiteralPortion = $__358.TemplateLiteralPortion,
-      RestParameter = $__358.RestParameter,
-      SuperExpression = $__358.SuperExpression,
-      ThisExpression = $__358.ThisExpression;
+  var $__359 = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/syntax/trees/ParseTrees")),
+      BindingIdentifier = $__359.BindingIdentifier,
+      BreakStatement = $__359.BreakStatement,
+      ContinueStatement = $__359.ContinueStatement,
+      DebuggerStatement = $__359.DebuggerStatement,
+      EmptyStatement = $__359.EmptyStatement,
+      ExportSpecifier = $__359.ExportSpecifier,
+      ExportStar = $__359.ExportStar,
+      IdentifierExpression = $__359.IdentifierExpression,
+      ImportSpecifier = $__359.ImportSpecifier,
+      LiteralExpression = $__359.LiteralExpression,
+      ModuleSpecifier = $__359.ModuleSpecifier,
+      PredefinedType = $__359.PredefinedType,
+      PropertyNameShorthand = $__359.PropertyNameShorthand,
+      TemplateLiteralPortion = $__359.TemplateLiteralPortion,
+      RestParameter = $__359.RestParameter,
+      SuperExpression = $__359.SuperExpression,
+      ThisExpression = $__359.ThisExpression;
   var CloneTreeTransformer = function CloneTreeTransformer() {
     $traceurRuntime.defaultSuperCall(this, $CloneTreeTransformer.prototype, arguments);
   };
@@ -22211,15 +22232,15 @@ System.register("traceur@0.0.40/src/codegeneration/PureES6Transformer", [], func
   var MultiTransformer = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/codegeneration/MultiTransformer")).MultiTransformer;
   var TypeTransformer = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/codegeneration/TypeTransformer")).TypeTransformer;
   var UniqueIdentifierGenerator = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/codegeneration/UniqueIdentifierGenerator")).UniqueIdentifierGenerator;
-  var $__361 = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/options")),
-      options = $__361.options,
-      transformOptions = $__361.transformOptions;
+  var $__362 = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/options")),
+      options = $__362.options,
+      transformOptions = $__362.transformOptions;
   var PureES6Transformer = function PureES6Transformer(reporter) {
     var idGenerator = arguments[1] !== (void 0) ? arguments[1] : new UniqueIdentifierGenerator();
-    var $__359 = this;
+    var $__360 = this;
     $traceurRuntime.superCall(this, $PureES6Transformer.prototype, "constructor", [reporter, options.validate]);
     var append = (function(transformer) {
-      $__359.append((function(tree) {
+      $__360.append((function(tree) {
         return new transformer(idGenerator, reporter).transformAny(tree);
       }));
     });
@@ -22241,10 +22262,10 @@ System.register("traceur@0.0.40/src/codegeneration/PureES6Transformer", [], func
 System.register("traceur@0.0.40/src/codegeneration/module/createModuleEvaluationStatement", [], function() {
   "use strict";
   var __moduleName = "traceur@0.0.40/src/codegeneration/module/createModuleEvaluationStatement";
-  var $__362 = Object.freeze(Object.defineProperties(["System.get(", " +'')"], {raw: {value: Object.freeze(["System.get(", " +'')"])}}));
+  var $__363 = Object.freeze(Object.defineProperties(["System.get(", " +'')"], {raw: {value: Object.freeze(["System.get(", " +'')"])}}));
   var parseStatement = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/codegeneration/PlaceholderParser")).parseStatement;
   function createModuleEvaluationStatement(normalizedName) {
-    return parseStatement($__362, normalizedName);
+    return parseStatement($__363, normalizedName);
   }
   return {get createModuleEvaluationStatement() {
       return createModuleEvaluationStatement;
@@ -22269,42 +22290,42 @@ System.register("traceur@0.0.40/src/runtime/TraceurLoader", [], function() {
   var $TraceurLoader = TraceurLoader;
   ($traceurRuntime.createClass)(TraceurLoader, {
     importAll: function(names) {
-      var $__366 = $traceurRuntime.assertObject(arguments[1] !== (void 0) ? arguments[1] : {}),
-          referrerName = $__366.referrerName,
-          address = $__366.address;
-      var $__364 = this;
+      var $__367 = $traceurRuntime.assertObject(arguments[1] !== (void 0) ? arguments[1] : {}),
+          referrerName = $__367.referrerName,
+          address = $__367.address;
+      var $__365 = this;
       return Promise.all(names.map((function(name) {
-        return $__364.import(name, {
+        return $__365.import(name, {
           referrerName: referrerName,
           address: address
         });
       })));
     },
     loadAsScript: function(name) {
-      var $__366 = $traceurRuntime.assertObject(arguments[1] !== (void 0) ? arguments[1] : {}),
-          referrerName = $__366.referrerName,
-          address = $__366.address;
+      var $__367 = $traceurRuntime.assertObject(arguments[1] !== (void 0) ? arguments[1] : {}),
+          referrerName = $__367.referrerName,
+          address = $__367.address;
       return this.internalLoader_.load(name, referrerName, address, 'script').then((function(codeUnit) {
         return codeUnit.result;
       }));
     },
     loadAsScriptAll: function(names) {
-      var $__366 = $traceurRuntime.assertObject(arguments[1] !== (void 0) ? arguments[1] : {}),
-          referrerName = $__366.referrerName,
-          address = $__366.address;
-      var $__364 = this;
+      var $__367 = $traceurRuntime.assertObject(arguments[1] !== (void 0) ? arguments[1] : {}),
+          referrerName = $__367.referrerName,
+          address = $__367.address;
+      var $__365 = this;
       return Promise.all(names.map((function(name) {
-        return $__364.loadAsScript(name, {
+        return $__365.loadAsScript(name, {
           referrerName: referrerName,
           address: address
         });
       })));
     },
     script: function(source) {
-      var $__366 = $traceurRuntime.assertObject(arguments[1] !== (void 0) ? arguments[1] : {}),
-          name = $__366.name,
-          referrerName = $__366.referrerName,
-          address = $__366.address;
+      var $__367 = $traceurRuntime.assertObject(arguments[1] !== (void 0) ? arguments[1] : {}),
+          name = $__367.name,
+          referrerName = $__367.referrerName,
+          address = $__367.address;
       return this.internalLoader_.script(source, name, referrerName, address);
     },
     semVerRegExp_: function() {
@@ -22382,9 +22403,9 @@ System.register("traceur@0.0.40/src/runtime/System", [], function() {
 System.register("traceur@0.0.40/src/util/TestErrorReporter", [], function() {
   "use strict";
   var __moduleName = "traceur@0.0.40/src/util/TestErrorReporter";
-  var $__370 = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/util/ErrorReporter")),
-      ErrorReporter = $__370.ErrorReporter,
-      format = $__370.format;
+  var $__371 = $traceurRuntime.assertObject(System.get("traceur@0.0.40/src/util/ErrorReporter")),
+      ErrorReporter = $__371.ErrorReporter,
+      format = $__371.format;
   var TestErrorReporter = function TestErrorReporter() {
     var pathRe = arguments[0];
     this.errors = [];
@@ -22395,7 +22416,7 @@ System.register("traceur@0.0.40/src/util/TestErrorReporter", [], function() {
       this.errors.push(format(location, message));
     },
     hasMatchingError: function(expected) {
-      var $__368 = this;
+      var $__369 = this;
       var m;
       if (!this.pathRe || !(m = this.pathRe.exec(expected)))
         return this.errors.some((function(error) {
@@ -22404,7 +22425,7 @@ System.register("traceur@0.0.40/src/util/TestErrorReporter", [], function() {
       var expectedPath = m[1];
       var expectedNonPath = expected.replace(expectedPath, '<PATH>');
       return this.errors.some((function(error) {
-        var m = $__368.pathRe.exec(error);
+        var m = $__369.pathRe.exec(error);
         if (!m)
           return false;
         var actualPath = m[1];

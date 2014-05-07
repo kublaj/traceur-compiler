@@ -12,15 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import {ParseTreeVisitor} from '../syntax/ParseTreeVisitor';
+
+class BlacklistBindingNamesVisitor extends ParseTreeVisitor {
+  constructor(names) {
+    this.names = names;
+  }
+
+  visitBindingIdentifier(tree) {
+    var name = tree.identifierToken.value;
+    this.names[name] = true;
+  }
+}
+
 export class UniqueIdentifierGenerator {
-  constructor() {
+  constructor(tree = undefined) {
     this.identifierIndex = 0;
+    this.blacklistedNames = Object.create(null);
   }
 
   /**
    * @return {string}
    */
   generateUniqueIdentifier() {
-    return `$__${this.identifierIndex++}`;
+    while (true) {
+      var name = `$__${this.identifierIndex++}`;
+      if (!this.blacklistedNames[name])
+        return name;
+    }
+  }
+
+  blacklistBindingNames(tree) {
+    var visitor = new BlacklistBindingNamesVisitor(this.blacklistedNames);
+    visitor.visitAny(tree);
   }
 }
