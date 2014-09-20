@@ -297,4 +297,13 @@ suite('BlockBindingTransformer.js', function() {
       'let x = 1; { let y = class x {}; }',
       'var x = 1; { var y = class x {}; }');
 
+  makeTest('Siblings',
+      '{ let x = 1; }' +
+      '{ let x = 2; }' +
+      'x;',
+      // ======
+      '{ var x$__0 = 1; }' +
+      '{ var x$__1 = 2; }' +
+      'x;');
+
 });
