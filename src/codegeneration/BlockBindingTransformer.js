@@ -51,7 +51,7 @@ import {FindIdentifiers} from './FindIdentifiers';
 import {FindVisitor} from './FindVisitor';
 import {FnExtractAbruptCompletions} from './FnExtractAbruptCompletions';
 import {FreeVariableChecker} from '../semantics/FreeVariableChecker';
-import {ScopeChainBuilder} from '../semantics/ScopeChainBuilder';
+import {FreeVariableBuilder} from '../semantics/FreeVariableBuilder';
 import {prependStatements} from './PrependStatements';
 
 /**
@@ -153,7 +153,7 @@ export class BlockBindingTransformer extends ParseTreeTransformer {
     this.idGenerator_ = idGenerator;
     this.reporter_ = reporter;
     if (!scopeBuilder) {
-      scopeBuilder = new ScopeChainBuilder(reporter);
+      scopeBuilder = new FreeVariableBuilder(reporter);
       scopeBuilder.visitAny(tree);
     }
     this.scopeBuilder_ = scopeBuilder;
@@ -232,9 +232,15 @@ export class BlockBindingTransformer extends ParseTreeTransformer {
     // Look for free variables with the same name in the current var scope.
     var varScope = scope.getVarScope();
     if (varScope) {
+
+
+
       var finder = new FindFreeVarByName(name, this.scopeBuilder_,
                                          this.reporter_);
       finder.visitAny(varScope.tree);
+
+      console.log(name, varScope.references_, finder.found);
+
       if (finder.found) return true;
     }
     var parentBinding = parent.getBindingByName(name);

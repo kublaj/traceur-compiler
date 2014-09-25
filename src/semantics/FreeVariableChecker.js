@@ -25,7 +25,7 @@ import {TYPEOF} from '../syntax/TokenType';
 import {ScopeVisitor} from './ScopeVisitor';
 import {ScopeChainBuilder} from './ScopeChainBuilder';
 
-function hasArgumentsInScope(scope) {
+export function hasArgumentsInScope(scope) {
   for (; scope; scope = scope.parent) {
     switch (scope.tree.type) {
       case FUNCTION_DECLARATION:
@@ -39,7 +39,7 @@ function hasArgumentsInScope(scope) {
   return false;
 }
 
-function inModuleScope(scope) {
+export function inModuleScope(scope) {
   for (; scope; scope = scope.parent) {
     if (scope.tree.type === MODULE) {
       return true;
