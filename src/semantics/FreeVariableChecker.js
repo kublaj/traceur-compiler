@@ -24,8 +24,9 @@ import {
 import {TYPEOF} from '../syntax/TokenType';
 import {ScopeVisitor} from './ScopeVisitor';
 import {ScopeChainBuilder} from './ScopeChainBuilder';
+import {FreeVariableBuilder} from './FreeVariableBuilder';
 
-export function hasArgumentsInScope(scope) {
+function hasArgumentsInScope(scope) {
   for (; scope; scope = scope.parent) {
     switch (scope.tree.type) {
       case FUNCTION_DECLARATION:
@@ -39,7 +40,7 @@ export function hasArgumentsInScope(scope) {
   return false;
 }
 
-export function inModuleScope(scope) {
+function inModuleScope(scope) {
   for (; scope; scope = scope.parent) {
     if (scope.tree.type === MODULE) {
       return true;
@@ -51,72 +52,77 @@ export function inModuleScope(scope) {
 /**
  * Checks for free variables and reports an error for each of them.
  */
-export class FreeVariableChecker extends ScopeVisitor {
+export class FreeVariableChecker extends FreeVariableBuilder {
   /**
    * @param {ScopeVisitor} scopeBuilder
    * @param {ErrorReporter} reporter
    */
-  constructor(scopeBuilder, reporter, global = Object.create(null)) {
-    super();
-    this.scopeBuilder_ = scopeBuilder;
-    this.reporter_ = reporter;
+  constructor(reporter, global = Object.create(null)) {
+    super(reporter);
+    this.reporter = reporter;
     this.global_ = global;
   }
 
-  pushScope(tree) {
-    // Override to return the pre-built scope.
-    return this.scope = this.scopeBuilder_.getScopeForTree(tree);
-  }
-
-  visitUnaryExpression(tree) {
-    // Allow typeof x to be a heuristic for allowing reading x later.
-    if (tree.operator.type === TYPEOF &&
-        tree.operand.type === IDENTIFIER_EXPRESSION) {
-      var scope = this.scope;
-      var binding = scope.getBinding(tree.operand);
-      if (!binding) {
-        scope.addVar(tree.operand, this.reporter_);
-      }
-    } else {
-      super(tree);
+  popScope(scope) {
+    super(scope);
+    if (!scope.parent) {
+      scope.freeVariables().forEach((tree) => this.reportFreeVar_(tree));
     }
   }
 
-  visitIdentifierExpression(tree) {
-    if (this.inWithBlock) {
-      return;
-    }
-    var scope = this.scope;
-    var binding = scope.getBinding(tree);
-    if (binding) {
-      return;
-    }
-
+  reportFreeVar_(tree) {
     var name = tree.getStringValue();
-    if (name === 'arguments' && hasArgumentsInScope(scope)) {
-      return;
-    }
-
-    if (name === '__moduleName' && inModuleScope(scope)) {
-      return;
-    }
-
-    if (!(name in this.global_)) {
-      this.freeVariableFound(tree, name);
-    }
+    if (name in this.global_) return;
+    this.reporter.reportError(tree.location.start, `${name} is not defined`);
   }
 
-  freeVariableFound(tree, name) {
-    this.reporter_.reportError(tree.location.start, `${name} is not defined`);
-  }
+  // visitUnaryExpression(tree) {
+  //   // Allow typeof x to be a heuristic for allowing reading x later.
+  //   if (tree.operator.type === TYPEOF &&
+  //       tree.operand.type === IDENTIFIER_EXPRESSION) {
+  //     var scope = this.scope;
+  //     var binding = scope.getBinding(tree.operand);
+  //     if (!binding) {
+  //       scope.addVar(tree.operand, this.reporter);
+  //     }
+  //   } else {
+  //     super(tree);
+  //   }
+  // }
+
+  // visitIdentifierExpression(tree) {
+  //   if (this.inWithBlock) {
+  //     return;
+  //   }
+  //   var scope = this.scope;
+  //   var binding = scope.getBinding(tree);
+  //   if (binding) {
+  //     return;
+  //   }
+
+  //   var name = tree.getStringValue();
+  //   if (name === 'arguments' && hasArgumentsInScope(scope)) {
+  //     return;
+  //   }
+
+  //   if (name === '__moduleName' && inModuleScope(scope)) {
+  //     return;
+  //   }
+
+  //   if (!(name in this.global_)) {
+  //     this.freeVariableFound(tree, name);
+  //   }
+  // }
+
+  // freeVariableFound(tree, name) {
+  //   this.reporter.reportError(tree.location.start, `${name} is not defined`);
+  // }
 }
 
 /**
  * Validates that there are no free variables in a tree.
  */
 export function validate(tree, reporter, global = Reflect.global) {
-  var builder = new ScopeChainBuilder(reporter);
-  builder.visitAny(tree);
-  var checker = new FreeVariableChecker(builder, reporter, global);
+  var checker = new FreeVariableChecker(reporter, global);
   checker.visitAny(tree);
 }
