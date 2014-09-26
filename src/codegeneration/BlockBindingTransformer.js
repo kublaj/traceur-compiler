@@ -50,7 +50,6 @@ import {
 import {FindIdentifiers} from './FindIdentifiers';
 import {FindVisitor} from './FindVisitor';
 import {FnExtractAbruptCompletions} from './FnExtractAbruptCompletions';
-import {FreeVariableChecker} from '../semantics/FreeVariableChecker';
 import {FreeVariableBuilder} from '../semantics/FreeVariableBuilder';
 import {prependStatements} from './PrependStatements';
 
@@ -231,17 +230,8 @@ export class BlockBindingTransformer extends ParseTreeTransformer {
 
     // Look for free variables with the same name in the current var scope.
     var varScope = scope.getVarScope();
-    if (varScope) {
-
-
-
-      var finder = new FindFreeVarByName(name, this.scopeBuilder_,
-                                         this.reporter_);
-      finder.visitAny(varScope.tree);
-
-      console.log(name, varScope.references_, finder.found);
-
-      if (finder.found) return true;
+    if (varScope && varScope.hasFreeVariable(name)) {
+      return true;
     }
     var parentBinding = parent.getBindingByName(name);
     if (!parentBinding) return false;
@@ -753,30 +743,4 @@ class FindBlockBindingInLoop extends FindVisitor {
           return false;
         }).found;
   }
-}
-
-class FindFreeVarByName extends FreeVariableChecker {
-  constructor(name, scopeBuilder, reporter) {
-    super(scopeBuilder, reporter, Object.create(null));
-    this.name_ = name;
-    this.found = false;
-  }
-
-  freeVariableFound(tree, name) {
-    if (name === this.name_) {
-      this.found = true;
-    }
-  }
-
-  /**
-   * Override to exit early.
-   */
-  visitList(list) {
-    if (list) {
-      for (var i = 0; !this.found && i < list.length; i++) {
-        this.visitAny(list[i]);
-      }
-    }
-  }
-
 }
