@@ -22,6 +22,7 @@ src/outputgeneration/SourceMapIntegration.js
 src/syntax/ParseTreeVisitor.js
 src/syntax/trees/ParseTreeType.js
 src/syntax/trees/ParseTrees.js
+src/syntax/trees/trees.json
 test/unit/codegeneration/PlaceholderParser.generated.js
 test/unit/tools/SourceMapMapping.generated.js
 test/unit/node/resources/compile-amd
