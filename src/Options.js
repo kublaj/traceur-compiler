@@ -273,7 +273,7 @@ export class CommandOptions extends Options {
    */
   static fromArgv(args) {
     var options = new CommandOptions();
-    args.forEach((arg) => options.parseCommand(arg));
+    options.setFromArgv(args);
     return options;
   }
   /**
@@ -294,6 +294,14 @@ export class CommandOptions extends Options {
       this.setOptionCoerced(m[1], m[2]);
   }
 
+  setFromString(s) {
+    this.setFromArgv(s.split(/\s+/));
+  }
+
+  setFromArgv(args) {
+    args.forEach((arg) => this.parseCommand(arg));
+  }
+
   setOptionCoerced(name, value) {
     // commander.js give value = null if no argument follows --option-name
     if (typeof value !== 'undefined' && value !== null)
@@ -303,7 +311,6 @@ export class CommandOptions extends Options {
 
     this.setOption(name,  value);
   }
-
 }
 
 function coerceOptionValue(v) {

@@ -32,6 +32,11 @@
   }
 
   function parseProlog(source) {
+    var traceurOptions = new CommandOptions();
+    traceurOptions.debug = true;
+    traceurOptions.freeVariableChecker = true;
+    traceurOptions.validate = true;
+
     var returnValue = {
       onlyInBrowser: false,
       skip: false,
@@ -39,7 +44,8 @@
         return this.expectedErrors.length !== 0;
       },
       expectedErrors: [],
-      async: false
+      async: false,
+      traceurOptions: traceurOptions
     };
     forEachPrologLine(source, function(line) {
       var m;
@@ -50,7 +56,7 @@
       } else if (line.indexOf('// Async.') === 0) {
         returnValue.async = true;
       } else if ((m = /\/\ Options:\s*(.+)/.exec(line))) {
-        returnValue.traceurOptions = traceur.util.CommandOptions.fromString(m[1]);
+        traceurOptions.setFromString(m[1]); 
       } else if ((m = /\/\/ Error:\s*(.+)/.exec(line))) {
         returnValue.expectedErrors.push(m[1]);
       }
@@ -121,14 +127,15 @@
     });
   }
 
+  var CommandOptions = traceur.get('./Options.js').CommandOptions;
   var Options = traceur.get('./Options.js').Options;
 
   function setOptions(load, options) {
-    var traceurOptions = new Options(options.traceurOptions);
-    traceurOptions.debug = true;
-    traceurOptions.freeVariableChecker = true;
-    traceurOptions.validate = true;
-    load.metadata.traceurOptions = traceurOptions;
+    // var traceurOptions = new Options(options.traceurOptions);
+    // traceurOptions.debug = true;
+    // traceurOptions.freeVariableChecker = true;
+    // traceurOptions.validate = true;
+    load.metadata.traceurOptions = options.traceurOptions;
   }
 
   function featureTest(name, url, fileLoader) {
