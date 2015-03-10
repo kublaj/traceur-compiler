@@ -148,6 +148,7 @@ export class ClassTransformer extends TempVarTransformer {
     this.strictCount_ = 0;
     this.state_ = null;
     this.reporter_ = reporter;
+    this.options_ = options;
     this.showDebugNames_ = options.debugNames;
   }
 
@@ -371,6 +372,9 @@ export class ClassTransformer extends TempVarTransformer {
   }
 
   transformPropertyMethodAssignment_(tree, homeObject, internalName, originalName) {
+    if (this.options_.newSuper) {
+      return super.transformPropertyMethodAssignment(tree);
+    }
     let parameterList = this.transformAny(tree.parameterList);
     let body = this.transformSuperInFunctionBody_(
         tree.body, homeObject, internalName);
@@ -392,6 +396,9 @@ export class ClassTransformer extends TempVarTransformer {
   }
 
   transformGetAccessor_(tree, homeObject) {
+    if (this.options_.newSuper) {
+      return super.transformGetAccessor(tree);
+    }
     let body = this.transformSuperInFunctionBody_(tree.body, homeObject);
     if (!tree.isStatic && body === tree.body)
       return tree;
@@ -401,6 +408,9 @@ export class ClassTransformer extends TempVarTransformer {
   }
 
   transformSetAccessor_(tree, homeObject) {
+    if (this.options_.newSuper) {
+      return super.transformSetAccessor(tree);
+    }
     let parameterList = this.transformAny(tree.parameterList);
     let body = this.transformSuperInFunctionBody_(tree.body, homeObject);
     if (!tree.isStatic && body === tree.body)

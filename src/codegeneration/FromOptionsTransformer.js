@@ -152,13 +152,15 @@ export class FromOptionsTransformer extends MultiTransformer {
       }
     }
 
-    // ClassTransformer needs to come before ObjectLiteralTransformer.
-    if (transformOptions.classes)
-      append(ClassTransformer);
 
     if (transformOptions.newSuper) {
       append(NewSuperTransformer);
     }
+
+    // ClassTransformer needs to come before ObjectLiteralTransformer.
+    if (transformOptions.classes)
+      append(ClassTransformer);
+
 
 
     if (transformOptions.arrowFunctions)
