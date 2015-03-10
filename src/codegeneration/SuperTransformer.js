@@ -102,8 +102,11 @@ export class SuperTransformer extends ParseTreeTransformer {
         super.transformFunctionDeclaration(tree);
     this.inNestedFunc_--;
 
-    if (oldSuperCount !== this.superCount_)
+    if (oldSuperCount !== this.superCount_) {
+      // throw new Error('unreachable');
+      debugger
       this.nestedSuperCount_ += this.superCount_ - oldSuperCount;
+    }
 
     return transformedTree;
   }

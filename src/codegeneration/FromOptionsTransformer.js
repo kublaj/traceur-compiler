@@ -36,6 +36,7 @@ import {InlineModuleTransformer} from './InlineModuleTransformer.js';
 import {MemberVariableTransformer} from './MemberVariableTransformer.js';
 import {ModuleTransformer} from './ModuleTransformer.js';
 import {MultiTransformer} from './MultiTransformer.js';
+import {NewSuperTransformer} from './NewSuperTransformer.js';
 import {NumericLiteralTransformer} from './NumericLiteralTransformer.js';
 import {ObjectLiteralTransformer} from './ObjectLiteralTransformer.js';
 import {PropertyNameShorthandTransformer} from
@@ -151,12 +152,17 @@ export class FromOptionsTransformer extends MultiTransformer {
       }
     }
 
-    if (transformOptions.arrowFunctions)
-      append(ArrowFunctionTransformer);
-
     // ClassTransformer needs to come before ObjectLiteralTransformer.
     if (transformOptions.classes)
       append(ClassTransformer);
+
+    if (transformOptions.newSuper) {
+      append(NewSuperTransformer);
+    }
+
+
+    if (transformOptions.arrowFunctions)
+      append(ArrowFunctionTransformer);
 
     if (transformOptions.propertyMethods ||
         transformOptions.computedPropertyNames ||
