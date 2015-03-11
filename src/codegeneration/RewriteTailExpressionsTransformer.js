@@ -17,6 +17,7 @@ import {
   ArgumentList,
   BinaryExpression,
   CallExpression,
+  CommaExpression,
   ConditionalExpression,
   MemberExpression,
   MemberLookupExpression

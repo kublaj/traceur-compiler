@@ -13,8 +13,11 @@
 // limitations under the License.
 
 import {
+  ClassDeclaration,
+  ClassExpression,
   GetAccessor,
   PropertyMethodAssignment,
+  PropertyNameAssignment,
   SetAccessor,
 } from '../syntax/trees/ParseTrees.js';
 import {ExplodeExpressionTransformer} from './ExplodeExpressionTransformer.js';
@@ -34,6 +37,7 @@ import {
 import {
   createArgumentList,
   createAssignmentExpression,
+  createBindingIdentifier,
   createCommaExpression,
   createIdentifierExpression,
   createIdentifierToken,
@@ -69,54 +73,100 @@ export class NewSuperTransformer extends TempVarTransformer {
 
   transformClassDeclaration(tree) {
     let innerTransformer = this.innerSuperTransformer_;
+    let superClass = innerTransformer.transformAny(tree.superClass);
     let entry = innerTransformer.pushClassLiteral(tree);
     entry.prototypeName = parseExpression `${tree.name.identifierToken}.
         ${createIdentifierToken('prototype')}`;
     entry.staticName = tree.name.identifierToken;
-    let transformed = super.transformClassDeclaration(tree);
+    let elements = this.transformList(tree.elements);
     innerTransformer.pop();
-    return transformed;
+    if (tree.superClass === superClass && tree.elements === elements) {
+      return tree;
+    }
+
+    return new ClassDeclaration(tree.location, tree.name, superClass, elements,
+                                tree.annotations, tree.typeParameters);
+  }
+
+  transformClassExpression(tree) {
+    if (tree.name === null) {
+      let name = createBindingIdentifier(this.getTempIdentifier());
+      tree = new ClassExpression(tree.location, name, tree.superClass,
+                                 tree.elements, tree.annotations,
+                                 tree.typeParameters);
+    }
+
+    let innerTransformer = this.innerSuperTransformer_;
+    let superClass = innerTransformer.transformAny(tree.superClass);
+    let entry = innerTransformer.pushClassLiteral(tree);
+    entry.prototypeName = parseExpression `${tree.name.identifierToken}.
+        ${createIdentifierToken('prototype')}`;
+    entry.staticName = tree.name.identifierToken;
+    let elements = this.transformList(tree.elements);
+    innerTransformer.pop();
+    if (tree.superClass === superClass && tree.elements === elements) {
+      return tree;
+    }
+
+    return new ClassExpression(tree.location, tree.name, superClass, elements,
+                              tree.annotations, tree.typeParameters);
   }
 
   transformGetAccessor(tree) {
     let innerTransformer = this.innerSuperTransformer_;
+    let name = innerTransformer.transformAny(tree.name);
     innerTransformer.pushProperty(tree);
     let body = innerTransformer.transformAny(tree.body);
     innerTransformer.pop();
-    if (tree.body === body) {
+    if (tree.name === name && tree.body === body) {
       return tree;
     }
-    
-    return new GetAccessor(tree.location, tree.isStatic, tree.name,
+
+    return new GetAccessor(tree.location, tree.isStatic, name,
                            tree.typeAnnotation, tree.annotations, body);
   }
 
   transformSetAccessor(tree) {
     let innerTransformer = this.innerSuperTransformer_;
+    let name = innerTransformer.transformAny(tree.name);
     innerTransformer.pushProperty(tree);
     let body = innerTransformer.transformAny(tree.body);
     let parameterList = innerTransformer.transformAny(tree.parameterList);
     innerTransformer.pop();
-    if (tree.body === body && tree.parameterList === parameterList) {
+    if (tree.name === name && tree.body === body &&
+        tree.parameterList === parameterList) {
       return tree;
     }
-    
-    return new SetAccessor(tree.location, tree.isStatic, tree.name,
-        parameterList, tree.annotations, body);
+
+    return new SetAccessor(tree.location, tree.isStatic, name,
+                           parameterList, tree.annotations, body);
   }
 
   transformPropertyMethodAssignment(tree) {
     let innerTransformer = this.innerSuperTransformer_;
+    let name = innerTransformer.transformAny(tree.name);
     innerTransformer.pushProperty(tree);
     let body = innerTransformer.transformAny(tree.body);
     let parameterList = innerTransformer.transformAny(tree.parameterList);
     innerTransformer.pop();
-    if (tree.body === body && tree.parameterList === parameterList) {
+    if (tree.name === name && tree.body === body &&
+        tree.parameterList === parameterList) {
       return tree;
     }
-    
+
     return new PropertyMethodAssignment(tree.location, tree.isStatic,
-        tree.functionKind, tree.name, parameterList, tree.typeAnnotation,
+        tree.functionKind, name, parameterList, tree.typeAnnotation,
         tree.annotations, body, tree.debugName);
+  }
+
+  transformPropertyNameAssignment(tree) {
+    let innerTransformer = this.innerSuperTransformer_;
+    let name = innerTransformer.transformAny(tree.name);
+    let value = innerTransformer.transformAny(tree.value);
+    if (tree.name === name && tree.value === value) {
+      return tree;
+    }
+
+    return new PropertyNameAssignment(tree.location, name, value);
   }
 }

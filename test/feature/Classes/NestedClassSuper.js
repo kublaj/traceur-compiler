@@ -16,7 +16,7 @@ class OneExtWrapper {
       constructor() {
         var o = {};
         super(o);
-        assert.equal('c1', o.r);
+        assert.equal('c1', o.r, 'aaa');
       }
       m() { return super.m(); }
       get g() { return super.g; }
@@ -30,7 +30,7 @@ class OneExtWrapper {
       constructor() {
         var o = {};
         super(o);
-        assert.equal('c1', o.r);
+        assert.equal('c1', o.r, 'bbb');
       }
       m() { return super.m(); }
       get g() { return super.g; }
@@ -45,7 +45,7 @@ class OneExtWrapper {
         constructor() {
           var o = {};
           super(o);
-          assert.equal('c1', o.r);
+          assert.equal('c1', o.r, 'ccc');
         }
         m() { return super.m(); }
         get g() { return super.g; }
@@ -60,7 +60,7 @@ class OneExtWrapper {
       constructor() {
         var o = {};
         super(o);
-        assert.equal('c1', o.r);
+        assert.equal('c1', o.r, 'ddd');
       }
       m() { return super.m(); }
       get g() { return super.g; }
@@ -74,7 +74,7 @@ class OneExtWrapper {
       constructor() {
         var o = {};
         super(o);
-        assert.equal('c1', o.r);
+        assert.equal('c1', o.r, 'eee');
       }
       m() { return super.m(); }
       get g() { return super.g; }

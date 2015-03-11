@@ -42,7 +42,7 @@ import {propName} from '../staticsemantics/PropName.js';
 
 /**
  * FindAdvancedProperty class that finds if an object literal contains a
- * computed property name, an at name or a __proto__ property.
+ * computed property name or a __proto__ property.
  */
 class FindAdvancedProperty extends FindVisitor {
   constructor(transformOptions) {
@@ -234,7 +234,7 @@ export class ObjectLiteralTransformer extends TempVarTransformer {
     // Filter out the __proto__ here which is represented as a null value.
     properties = properties.filter((tree) => tree);
 
-    // (tmp = ..., Object.defineProperty(...), ..., tmp)
+    // (tmp = ..., Object.defineProperty(tmp, ...), ...)
     let tempVar = this.addTempVar();
     let tempVarIdentifierExpression = createIdentifierExpression(tempVar);
 
@@ -258,7 +258,6 @@ export class ObjectLiteralTransformer extends TempVarTransformer {
         createAssignmentExpression(
             tempVarIdentifierExpression,
             objectExpression));
-    expressions.push(tempVarIdentifierExpression);
     return createParenExpression(createCommaExpression(expressions));
   }
 

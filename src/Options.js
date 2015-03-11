@@ -48,7 +48,7 @@ export const optionsV01 = enumerableOnlyObject({
   moduleName: 'default',
   modules: 'register',
   numericLiterals: true,
-  newSuper: false,
+  newSuper: true,
   outputLanguage: 'es5',
   properTailCalls: false,
   propertyMethods: true,
@@ -151,7 +151,7 @@ addFeatureOption('exponentiation', EXPERIMENTAL);
 addFeatureOption('forOn', EXPERIMENTAL);
 addFeatureOption('generatorComprehension', EXPERIMENTAL);
 addFeatureOption('memberVariables', EXPERIMENTAL);
-addFeatureOption('newSuper', EXPERIMENTAL);
+addFeatureOption('newSuper', ON_BY_DEFAULT);
 addFeatureOption('require', EXPERIMENTAL);
 addFeatureOption('types', EXPERIMENTAL);
 

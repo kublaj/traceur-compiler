@@ -106,8 +106,13 @@ export class InnerSuperTransformer extends TempVarTransformer {
   }
 
   getProtoName() {
-    let isStatic = this.stack_[this.stack_.length - 1];
-    let entry = this.stack_[this.stack_.length - 2];
+    let i = this.stack_.length;
+    if (i % 2 !== 0) {
+      // We are in an extends or a computed name expression.
+      i--;
+    }
+    let isStatic = this.stack_[i - 1];
+    let entry = this.stack_[i - 2];
     if (isStatic) {
       entry.hasStatic = true;
       if (!entry.staticName) {
@@ -128,6 +133,18 @@ export class InnerSuperTransformer extends TempVarTransformer {
   getConstructorName() {
     let entry = this.stack_[this.stack_.length - 2];
     return entry.staticName;
+  }
+
+  transformClassDeclaration(tree) {
+    return this.outerTransformer_.transformClassDeclaration(tree);
+  }
+
+  transformClassExpression(tree) {
+    return this.outerTransformer_.transformClassExpression(tree);
+  }
+
+  transformObjectLiteralExpression(tree) {
+    return this.outerTransformer_.transformObjectLiteralExpression(tree);
   }
 
   transformMemberShared_(operand) {
@@ -155,8 +172,6 @@ export class InnerSuperTransformer extends TempVarTransformer {
       return createArgumentList([createThisExpression(), ...tree.args.args]);
     }
 
-    // // TODO(arv): This does not yet handle computed properties.
-    // // [expr]() { super(); }
     if (tree.operand.type === SUPER_EXPRESSION) {
       // We have: super(args)
       return parseExpression `$traceurRuntime.superConstructor(

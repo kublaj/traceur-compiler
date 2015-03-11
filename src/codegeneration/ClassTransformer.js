@@ -373,8 +373,19 @@ export class ClassTransformer extends TempVarTransformer {
 
   transformPropertyMethodAssignment_(tree, homeObject, internalName, originalName) {
     if (this.options_.newSuper) {
-      return super.transformPropertyMethodAssignment(tree);
+      let parameterList = this.transformAny(tree.parameterList);
+      let body = this.transformAny(tree.body);
+      // TODO(arv): Transform name and annotations too?
+      if (!tree.isStatic && parameterList === tree.parameterList &&
+          body === tree.body) {
+        return tree;
+      }
+      let isStatic = false;
+      return new PropertyMethodAssignment(tree.location, isStatic,
+          tree.functionKind, tree.name, parameterList, tree.typeAnnotation,
+          tree.annotations, body, tree.debugName);
     }
+
     let parameterList = this.transformAny(tree.parameterList);
     let body = this.transformSuperInFunctionBody_(
         tree.body, homeObject, internalName);
@@ -397,8 +408,18 @@ export class ClassTransformer extends TempVarTransformer {
 
   transformGetAccessor_(tree, homeObject) {
     if (this.options_.newSuper) {
-      return super.transformGetAccessor(tree);
+      let body = this.transformAny(tree.body);
+      // TODO(arv): Transform name and annotations too?
+
+      if (!tree.isStatic && body === tree.body) {
+        return tree;
+      }
+
+      // not static
+      return new GetAccessor(tree.location, false, tree.name,
+                             tree.typeAnnotation, tree.annotations, body);
     }
+
     let body = this.transformSuperInFunctionBody_(tree.body, homeObject);
     if (!tree.isStatic && body === tree.body)
       return tree;
@@ -409,8 +430,19 @@ export class ClassTransformer extends TempVarTransformer {
 
   transformSetAccessor_(tree, homeObject) {
     if (this.options_.newSuper) {
-      return super.transformSetAccessor(tree);
+      let parameterList = this.transformAny(tree.parameterList);
+      let body = this.transformAny(tree.body);
+      // TODO(arv): Transform name and annotations too?
+
+      if (!tree.isStatic && parameterList === tree.parameterList &&
+          body === tree.body) {
+        return tree;
+      }
+
+      return new SetAccessor(tree.location, false, tree.name, parameterList,
+                             tree.annotations, body);
     }
+
     let parameterList = this.transformAny(tree.parameterList);
     let body = this.transformSuperInFunctionBody_(tree.body, homeObject);
     if (!tree.isStatic && body === tree.body)
